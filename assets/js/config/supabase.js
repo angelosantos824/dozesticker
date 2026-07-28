@@ -1,7 +1,7 @@
 export const supabaseConfig = {
   url: "https://crbxqjxpghgfqkibudlz.supabase.co",
   anonKey: "sb_publishable_fIzoLl2_C25e3ZymLbidpA_pciDrE3I",
-  enabled: false,
+  enabled: true,
   projectPolicy: "Usar obrigatoriamente o mesmo projeto Supabase do DOZEDEV Studio.",
   schema: "dozesticker",
   authSchema: "auth"
