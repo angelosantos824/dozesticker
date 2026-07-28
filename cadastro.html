@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#07140f">
+    <title>DOZESTICKER | Criar conta</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="stylesheet" href="assets/css/variables.css">
+    <link rel="stylesheet" href="assets/css/reset.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+    <link rel="stylesheet" href="assets/css/pages/auth.css">
+    <script type="module" src="assets/js/auth/auth-guard.js"></script>
+    <script type="module" src="assets/js/app.js"></script>
+  </head>
+  <body data-page="cadastro">
+    <main class="auth-page">
+      <section class="auth-shell">
+        <a class="auth-brand" href="index.html">
+          <span class="brand-mark">12</span>
+          <span>DOZESTICKER</span>
+        </a>
+        <form class="surface auth-card auth-form" data-signup-form>
+          <div>
+            <p class="eyebrow">Nova conta</p>
+            <h1>Criar conta</h1>
+            <p>Use o mesmo email da plataforma DOZEDEV para manter sua colecao isolada por usuario.</p>
+          </div>
+          <label class="field">
+            <span>Nome</span>
+            <input name="fullName" type="text" autocomplete="name" required>
+          </label>
+          <label class="field">
+            <span>Email</span>
+            <input name="email" type="email" autocomplete="email" required>
+          </label>
+          <label class="field">
+            <span>Senha</span>
+            <input name="password" type="password" autocomplete="new-password" minlength="8" required>
+          </label>
+          <label class="field">
+            <span>Confirmar senha</span>
+            <input name="confirmPassword" type="password" autocomplete="new-password" minlength="8" required>
+          </label>
+          <p class="form-message" data-auth-message></p>
+          <button class="button button-primary" type="submit">Criar conta</button>
+          <div class="auth-links">
+            <a href="login.html">Ja tenho conta</a>
+          </div>
+        </form>
+      </section>
+    </main>
+  </body>
+</html>

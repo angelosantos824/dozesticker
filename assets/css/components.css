@@ -1,0 +1,214 @@
+.surface,
+.page-panel {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: rgba(13, 33, 25, 0.82);
+  box-shadow: var(--shadow-soft);
+}
+
+.surface {
+  padding: var(--space-5);
+}
+
+.page-panel {
+  padding: clamp(1.25rem, 4vw, 3rem);
+}
+
+.button {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-4);
+  font-weight: 800;
+}
+
+.button-primary {
+  background: var(--color-primary);
+  color: #042015;
+}
+
+.button-secondary {
+  border-color: rgba(134, 239, 172, 0.28);
+  background: rgba(248, 250, 252, 0.06);
+  color: var(--color-white);
+}
+
+.auth-pending {
+  visibility: hidden;
+}
+
+.field {
+  display: grid;
+  min-width: 12rem;
+  gap: var(--space-2);
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.field input,
+.field select {
+  width: 100%;
+  min-height: 2.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: rgba(7, 20, 15, 0.86);
+  color: var(--color-white);
+  padding: 0 var(--space-3);
+}
+
+.compact-field {
+  min-width: 13rem;
+}
+
+.avatar-button {
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid rgba(251, 191, 36, 0.45);
+  border-radius: 50%;
+  background: rgba(251, 191, 36, 0.14);
+  color: var(--color-gold);
+  font-weight: 900;
+}
+
+.stat-card {
+  display: grid;
+  gap: var(--space-2);
+  min-height: 8rem;
+}
+
+.stat-label {
+  color: var(--color-muted);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 900;
+}
+
+.stat-note {
+  color: #cbd5e1;
+  font-size: 0.88rem;
+}
+
+.mini-stat {
+  display: grid;
+  gap: var(--space-1);
+  min-height: 5rem;
+}
+
+.mini-stat span {
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.mini-stat strong {
+  font-size: 1.7rem;
+}
+
+.progress-track {
+  overflow: hidden;
+  height: 0.75rem;
+  border-radius: 999px;
+  background: rgba(248, 250, 252, 0.1);
+}
+
+.progress-fill {
+  width: var(--progress-value);
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-blue));
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
+.badge-owned { color: var(--color-primary-soft); }
+.badge-missing { color: var(--color-danger); }
+.badge-duplicate { color: var(--color-purple); }
+.badge-stuck { color: var(--color-gold); }
+
+.empty-state {
+  display: grid;
+  min-height: 20rem;
+  place-items: center;
+  text-align: center;
+}
+
+.empty-state h1 {
+  margin: 0 0 var(--space-3);
+  font-size: clamp(1.8rem, 4vw, 3rem);
+}
+
+.empty-state p {
+  max-width: 38rem;
+  margin: 0 auto var(--space-4);
+  color: #cbd5e1;
+  line-height: 1.7;
+}
+
+.toast-region {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  z-index: 30;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  max-width: min(24rem, calc(100vw - 2rem));
+  border: 1px solid rgba(134, 239, 172, 0.35);
+  border-radius: var(--radius-md);
+  background: #092019;
+  color: var(--color-white);
+  padding: var(--space-3) var(--space-4);
+  box-shadow: var(--shadow-soft);
+}
+
+.toast-action {
+  border: 0;
+  background: transparent;
+  color: var(--color-primary-soft);
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.modal-backdrop[hidden] {
+  display: none;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.58);
+  z-index: 40;
+}
+
+.modal {
+  width: min(92vw, 28rem);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-soft);
+  padding: var(--space-5);
+}

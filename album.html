@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#07140f">
+    <title>DOZESTICKER | Album</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="stylesheet" href="assets/css/variables.css">
+    <link rel="stylesheet" href="assets/css/reset.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+    <link rel="stylesheet" href="assets/css/pages/album.css">
+    <link rel="stylesheet" href="assets/css/responsive.css">
+    <script type="module" src="assets/js/auth/auth-guard.js"></script>
+    <script type="module" src="assets/js/app.js"></script>
+  </head>
+  <body class="auth-pending" data-page="album">
+    <div class="app-shell">
+      <aside class="sidebar" data-sidebar></aside>
+      <main class="main-content">
+        <section class="album-page" data-album-shell>
+          <header class="page-header album-header">
+            <div>
+              <p class="eyebrow">Catalogo oficial</p>
+              <h1 data-album-title>Album Copa do Mundo 2026</h1>
+            </div>
+            <a class="button button-secondary" href="feira.html">Feira</a>
+          </header>
+
+          <section class="album-overview" aria-label="Estatisticas do album" data-album-stats></section>
+          <div data-album-search-wrap></div>
+          <section class="album-filters" data-album-filters></section>
+
+          <div class="album-workspace">
+            <aside data-album-navigation></aside>
+            <section class="album-content">
+              <div data-album-section-header></div>
+              <div class="album-grid" data-album-grid></div>
+            </section>
+          </div>
+        </section>
+      </main>
+      <nav class="mobile-nav" data-mobile-nav></nav>
+    </div>
+    <div class="toast-region" aria-live="polite" aria-atomic="true" data-toast-region></div>
+  </body>
+</html>

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#07140f">
+    <title>DOZESTICKER | Entrar</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="stylesheet" href="assets/css/variables.css">
+    <link rel="stylesheet" href="assets/css/reset.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+    <link rel="stylesheet" href="assets/css/pages/auth.css">
+    <script type="module" src="assets/js/auth/auth-guard.js"></script>
+    <script type="module" src="assets/js/app.js"></script>
+  </head>
+  <body data-page="login">
+    <main class="auth-page">
+      <section class="auth-shell">
+        <a class="auth-brand" href="index.html">
+          <span class="brand-mark">12</span>
+          <span>DOZESTICKER</span>
+        </a>
+        <form class="surface auth-card auth-form" data-login-form>
+          <div>
+            <p class="eyebrow">Conta DOZEDEV</p>
+            <h1>Entrar</h1>
+            <p>Acesse sua colecao individual com o Supabase Auth do projeto existente.</p>
+          </div>
+          <label class="field">
+            <span>Email</span>
+            <input name="email" type="email" autocomplete="email" required>
+          </label>
+          <label class="field">
+            <span>Senha</span>
+            <input name="password" type="password" autocomplete="current-password" required>
+          </label>
+          <p class="form-message" data-auth-message></p>
+          <button class="button button-primary" type="submit">Entrar</button>
+          <div class="auth-links">
+            <a href="cadastro.html">Criar conta</a>
+            <a href="recuperar-senha.html">Esqueci senha</a>
+          </div>
+        </form>
+      </section>
+    </main>
+  </body>
+</html>

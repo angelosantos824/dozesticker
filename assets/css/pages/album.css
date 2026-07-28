@@ -1,0 +1,255 @@
+.album-page {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.album-overview {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.album-overview .mini-stat {
+  min-height: 5rem;
+}
+
+.album-search {
+  min-width: 0;
+}
+
+.album-search input {
+  min-height: 3.15rem;
+  border-color: rgba(56, 189, 248, 0.35);
+  font-weight: 800;
+}
+
+.album-filters {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.album-type-filter {
+  width: min(100%, 14rem);
+  min-width: 0;
+}
+
+.album-workspace {
+  display: grid;
+  grid-template-columns: 15rem minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.album-nav {
+  position: sticky;
+  top: var(--space-4);
+  display: grid;
+  max-height: calc(100vh - 2rem);
+  gap: var(--space-2);
+  overflow: auto;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: rgba(13, 33, 25, 0.82);
+}
+
+.album-nav-item {
+  min-height: 2.45rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-muted);
+  padding: 0 var(--space-3);
+  text-align: left;
+  font-weight: 850;
+}
+
+.album-nav-item[aria-pressed="true"] {
+  border-color: rgba(34, 197, 94, 0.5);
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--color-white);
+}
+
+.album-nav-item.is-group {
+  margin-top: var(--space-2);
+  color: var(--color-gold);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.album-nav-item.is-team {
+  padding-left: var(--space-5);
+}
+
+.album-content {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.album-section-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: end;
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: rgba(13, 33, 25, 0.82);
+}
+
+.album-section-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.section-progress {
+  display: grid;
+  justify-items: end;
+  gap: var(--space-1);
+}
+
+.section-progress strong {
+  font-size: 1.35rem;
+}
+
+.section-progress span {
+  color: var(--color-primary-soft);
+  font-weight: 900;
+}
+
+.album-section-header .progress-block {
+  grid-column: 1 / -1;
+}
+
+.album-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+  gap: var(--space-3);
+}
+
+.album-sticker {
+  display: grid;
+  gap: var(--space-3);
+  min-height: 17.5rem;
+  border: 1px solid var(--color-border);
+  border-top: 4px solid var(--sticker-state);
+  border-radius: var(--radius-md);
+  background: rgba(248, 250, 252, 0.94);
+  color: #07140f;
+  padding: var(--space-3);
+}
+
+.album-sticker.is-owned {
+  --sticker-state: var(--color-primary);
+}
+
+.album-sticker.is-missing {
+  --sticker-state: var(--color-danger);
+}
+
+.album-sticker-frame {
+  position: relative;
+  min-height: 6.5rem;
+  border: 1px dashed rgba(7, 20, 15, 0.28);
+  border-radius: var(--radius-sm);
+  background:
+    linear-gradient(90deg, rgba(7, 20, 15, 0.08) 1px, transparent 1px),
+    linear-gradient(rgba(7, 20, 15, 0.08) 1px, transparent 1px),
+    #f8fafc;
+  background-size: 1rem 1rem;
+}
+
+.rare-star {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  display: grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-gold);
+  color: #241400;
+  font-size: 1rem;
+  font-weight: 950;
+}
+
+.album-sticker-body {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.album-sticker-code {
+  color: #0f5132;
+  font-size: 0.9rem;
+}
+
+.album-sticker h3 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 1rem;
+}
+
+.album-sticker p {
+  margin: 0;
+  color: #475569;
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.album-sticker-state {
+  min-height: 2.55rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--sticker-state);
+  color: #04140f;
+  font-weight: 950;
+}
+
+@media (max-width: 1024px) {
+  .album-overview {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .album-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .album-nav {
+    position: static;
+    display: flex;
+    max-height: none;
+    overflow-x: auto;
+  }
+
+  .album-nav-item {
+    flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 560px) {
+  .album-overview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .album-filters {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .album-section-header {
+    grid-template-columns: 1fr;
+    padding: var(--space-4);
+  }
+
+  .section-progress {
+    justify-items: start;
+  }
+
+  .album-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

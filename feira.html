@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#07140f">
+    <title>DOZESTICKER | Feira</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="stylesheet" href="assets/css/variables.css">
+    <link rel="stylesheet" href="assets/css/reset.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+    <link rel="stylesheet" href="assets/css/pages/feira.css">
+    <link rel="stylesheet" href="assets/css/pages/auth.css">
+    <script type="module" src="assets/js/auth/auth-guard.js"></script>
+    <script type="module" src="assets/js/app.js"></script>
+  </head>
+  <body class="auth-pending" data-page="feira">
+    <main class="fair-page">
+      <header class="fair-header">
+        <div class="fair-topline">
+          <div>
+            <p class="eyebrow">DOZESTICKER</p>
+            <h1>Feira</h1>
+          </div>
+          <div class="fair-actions">
+            <span class="sync-status" data-sync-status></span>
+            <button class="button button-secondary fair-mode-button" type="button" data-fair-fullscreen>Modo Feira</button>
+          </div>
+        </div>
+        <section class="fair-stats" aria-label="Resumo da colecao" data-fair-stats></section>
+      </header>
+
+      <section class="fair-search">
+        <label class="field">
+          <span>Pesquisar figurinha</span>
+          <input type="search" inputmode="search" autocomplete="off" placeholder="BRA17, 17, Cristiano, Portugal" data-fair-search>
+        </label>
+      </section>
+
+      <section class="recent-strip fair-secondary" aria-label="Ultimas pesquisadas" data-recent-searches></section>
+      <section class="fair-list" aria-label="Figurinhas faltantes" data-fair-list></section>
+    </main>
+    <div class="toast-region" aria-live="polite" aria-atomic="true" data-toast-region></div>
+  </body>
+</html>

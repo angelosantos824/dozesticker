@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#07140f">
+    <title>DOZESTICKER | Recuperar senha</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="stylesheet" href="assets/css/variables.css">
+    <link rel="stylesheet" href="assets/css/reset.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+    <link rel="stylesheet" href="assets/css/pages/auth.css">
+    <script type="module" src="assets/js/auth/auth-guard.js"></script>
+    <script type="module" src="assets/js/app.js"></script>
+  </head>
+  <body data-page="recuperar-senha">
+    <main class="auth-page">
+      <section class="auth-shell">
+        <a class="auth-brand" href="index.html">
+          <span class="brand-mark">12</span>
+          <span>DOZESTICKER</span>
+        </a>
+        <form class="surface auth-card auth-form" data-recovery-form>
+          <div>
+            <p class="eyebrow">Seguranca</p>
+            <h1>Recuperar senha</h1>
+            <p>Enviaremos um link seguro para o email cadastrado.</p>
+          </div>
+          <label class="field">
+            <span>Email</span>
+            <input name="email" type="email" autocomplete="email" required>
+          </label>
+          <p class="form-message" data-auth-message></p>
+          <button class="button button-primary" type="submit">Enviar link</button>
+          <div class="auth-links">
+            <a href="login.html">Voltar para login</a>
+          </div>
+        </form>
+      </section>
+    </main>
+  </body>
+</html>

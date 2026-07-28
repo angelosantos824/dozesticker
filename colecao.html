@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#07140f">
+    <title>DOZESTICKER | Minha Cole&ccedil;&atilde;o</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="stylesheet" href="assets/css/variables.css">
+    <link rel="stylesheet" href="assets/css/reset.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+    <link rel="stylesheet" href="assets/css/pages/colecao.css">
+    <link rel="stylesheet" href="assets/css/responsive.css">
+    <script type="module" src="assets/js/auth/auth-guard.js"></script>
+    <script type="module" src="assets/js/app.js"></script>
+  </head>
+  <body class="auth-pending" data-page="colecao">
+    <div class="app-shell">
+      <aside class="sidebar" data-sidebar></aside>
+      <main class="main-content">
+        <header class="page-header">
+          <div>
+            <p class="eyebrow">Album atual</p>
+            <h1>Minha cole&ccedil;&atilde;o</h1>
+          </div>
+          <a class="button button-primary" href="troca.html">Modo Troca</a>
+        </header>
+
+        <section class="toolbar surface" aria-label="Filtros da cole&ccedil;&atilde;o">
+          <label class="field search-field">
+            <span>Pesquisar</span>
+            <input type="search" placeholder="N&uacute;mero, c&oacute;digo, nome ou sele&ccedil;&atilde;o" data-sticker-search>
+          </label>
+          <label class="field">
+            <span>Sele&ccedil;&atilde;o</span>
+            <select data-section-filter></select>
+          </label>
+          <div class="filter-tabs" role="group" aria-label="Estado das figurinhas" data-status-filters></div>
+        </section>
+
+        <section class="sticker-grid" data-sticker-grid></section>
+      </main>
+      <nav class="mobile-nav" data-mobile-nav></nav>
+    </div>
+    <div class="toast-region" aria-live="polite" aria-atomic="true" data-toast-region></div>
+  </body>
+</html>

@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#07140f">
+    <title>DOZESTICKER | Dashboard</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="stylesheet" href="assets/css/variables.css">
+    <link rel="stylesheet" href="assets/css/reset.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+    <link rel="stylesheet" href="assets/css/pages/dashboard.css">
+    <link rel="stylesheet" href="assets/css/responsive.css">
+    <script type="module" src="assets/js/auth/auth-guard.js"></script>
+    <script type="module" src="assets/js/app.js"></script>
+  </head>
+  <body class="auth-pending" data-page="dashboard">
+    <div class="app-shell">
+      <aside class="sidebar" data-sidebar></aside>
+      <main class="main-content">
+        <header class="page-header">
+          <div>
+            <p class="eyebrow">Minha cole&ccedil;&atilde;o</p>
+            <h1>Copa do Mundo 2026</h1>
+          </div>
+          <div class="header-tools">
+            <label class="field compact-field">
+              <span>&Aacute;lbum</span>
+              <select data-album-select></select>
+            </label>
+            <button class="avatar-button" type="button" aria-label="Perfil provis&oacute;rio">DA</button>
+          </div>
+        </header>
+
+        <section class="stats-grid" data-dashboard-stats></section>
+
+        <section class="dashboard-grid">
+          <article class="surface progress-surface">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Progresso geral</p>
+                <h2>&Aacute;lbum em andamento</h2>
+              </div>
+              <strong data-dashboard-progress-label>48%</strong>
+            </div>
+            <div data-dashboard-progress></div>
+            <div class="actions-row">
+              <a class="button button-primary" href="colecao.html">Minha cole&ccedil;&atilde;o</a>
+              <a class="button button-secondary" href="album.html">&Aacute;lbum</a>
+              <a class="button button-secondary" href="feira.html">Feira</a>
+            </div>
+          </article>
+
+          <article class="surface">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Progresso por selecao</p>
+                <h2>Sele&ccedil;&otilde;es principais</h2>
+              </div>
+            </div>
+            <div class="team-progress-list" data-team-progress></div>
+          </article>
+
+          <article class="surface">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Minhas figurinhas</p>
+                <h2>Marcadas como tenho</h2>
+              </div>
+            </div>
+            <div class="recent-list" data-recent-stickers></div>
+          </article>
+
+          <article class="surface">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Resumo da colecao</p>
+                <h2>Status r&aacute;pido</h2>
+              </div>
+            </div>
+            <div class="summary-list" data-collection-summary></div>
+          </article>
+        </section>
+      </main>
+      <nav class="mobile-nav" data-mobile-nav></nav>
+    </div>
+    <div class="toast-region" aria-live="polite" aria-atomic="true" data-toast-region></div>
+  </body>
+</html>

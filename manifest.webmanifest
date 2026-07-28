@@ -1,0 +1,18 @@
+{
+  "name": "DOZESTICKER",
+  "short_name": "DOZESTICKER",
+  "description": "Controle visual de colecoes de figurinhas.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#07140f",
+  "theme_color": "#07140f",
+  "icons": [
+    {
+      "src": "assets/images/logo/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

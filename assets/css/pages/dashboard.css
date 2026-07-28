@@ -1,0 +1,51 @@
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(20rem, 0.85fr);
+  gap: var(--space-4);
+}
+
+.progress-surface {
+  display: grid;
+  align-content: start;
+  gap: var(--space-5);
+}
+
+.team-progress-list,
+.recent-list,
+.summary-list {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.team-row,
+.recent-row,
+.summary-row {
+  display: grid;
+  gap: var(--space-2);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-3);
+}
+
+.team-row-header,
+.recent-row,
+.summary-row {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+
+.team-row-header {
+  display: grid;
+  color: #e2e8f0;
+}
+
+.muted {
+  color: var(--color-muted);
+}

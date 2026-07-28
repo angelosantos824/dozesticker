@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#07140f">
+    <title>DOZESTICKER | Modo Troca</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="stylesheet" href="assets/css/variables.css">
+    <link rel="stylesheet" href="assets/css/reset.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+    <link rel="stylesheet" href="assets/css/pages/colecao.css">
+    <link rel="stylesheet" href="assets/css/responsive.css">
+    <script type="module" src="assets/js/auth/auth-guard.js"></script>
+    <script type="module" src="assets/js/app.js"></script>
+  </head>
+  <body class="auth-pending" data-page="troca">
+    <div class="app-shell trade-shell">
+      <aside class="sidebar" data-sidebar></aside>
+      <main class="main-content trade-content">
+        <header class="page-header trade-header">
+          <div>
+            <p class="eyebrow">Feira de troca</p>
+            <h1>Modo Troca</h1>
+          </div>
+        </header>
+
+        <section class="trade-search surface">
+          <label class="field search-field">
+            <span>Pesquisar figurinha</span>
+            <input type="search" inputmode="search" autocomplete="off" placeholder="Ex.: BRA 17" data-trade-search autofocus>
+          </label>
+        </section>
+
+        <section class="trade-stats" aria-label="Resumo da cole&ccedil;&atilde;o" data-trade-stats></section>
+        <section class="trade-list" aria-label="Figurinhas faltantes" data-trade-list></section>
+      </main>
+      <nav class="mobile-nav" data-mobile-nav></nav>
+    </div>
+    <div class="toast-region" aria-live="polite" aria-atomic="true" data-toast-region></div>
+  </body>
+</html>
