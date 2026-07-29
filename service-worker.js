@@ -1,4 +1,4 @@
-const cacheName = "dozesticker-v0.6.6-optional-sidebar";
+const cacheName = "dozesticker-v0.6.7-auth-cors-message";
 const appShell = [
   "./",
   "./index.html",

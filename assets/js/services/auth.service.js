@@ -5,34 +5,27 @@ const profileFields = "id, full_name, username, avatar_url, status, created_at, 
 
 export async function signUp({ fullName, email, password }) {
   const supabase = await requireSupabase();
-  const { data, error } = await supabase.auth.signUp({
+  return handleAuthResponse(() => supabase.auth.signUp({
     email,
     password,
     options: {
       data: {
         full_name: fullName.trim(),
-          product_code: "dozesticker"
+        product_code: "dozesticker"
       }
     }
-  });
-
-  if (error) throw translateAuthError(error);
-  return data;
+  }));
 }
 
 export async function signIn({ email, password }) {
   const supabase = await requireSupabase();
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
-  if (error) throw translateAuthError(error);
-  return data;
+  return handleAuthResponse(() => supabase.auth.signInWithPassword({ email, password }));
 }
 
 export async function signOut() {
   const supabase = await requireSupabase();
-  const { error } = await supabase.auth.signOut();
+  await handleAuthResponse(() => supabase.auth.signOut());
 
-  if (error) throw translateAuthError(error);
   window.dispatchEvent(new CustomEvent("dozesticker:auth-signed-out"));
 }
 
@@ -40,8 +33,7 @@ export async function getSession() {
   const supabase = await getSupabaseClient();
   if (!supabase) return null;
 
-  const { data, error } = await supabase.auth.getSession();
-  if (error) throw translateAuthError(error);
+  const data = await handleAuthResponse(() => supabase.auth.getSession());
   return data.session;
 }
 
@@ -52,8 +44,7 @@ export async function getCurrentUser() {
   const supabase = await getSupabaseClient();
   if (!supabase) return null;
 
-  const { data, error } = await supabase.auth.getUser();
-  if (error) throw translateAuthError(error);
+  const data = await handleAuthResponse(() => supabase.auth.getUser());
   return data.user;
 }
 
@@ -62,14 +53,12 @@ export async function getCurrentProfile() {
   const user = await getCurrentUser();
   if (!user) return null;
 
-  const { data, error } = await supabase
+  const data = await handleAuthResponse(() => supabase
     .schema("dozesticker")
     .from("profiles")
     .select(profileFields)
     .eq("id", user.id)
-    .maybeSingle();
-
-  if (error) throw translateAuthError(error);
+    .maybeSingle());
   return data;
 }
 
@@ -83,33 +72,25 @@ export async function updateProfile({ fullName, username, avatarUrl }) {
   if (typeof username !== "undefined") payload.username = username || null;
   if (typeof avatarUrl !== "undefined") payload.avatar_url = avatarUrl || null;
 
-  const { data, error } = await supabase
+  const data = await handleAuthResponse(() => supabase
     .schema("dozesticker")
     .from("profiles")
     .update(payload)
     .eq("id", user.id)
     .select(profileFields)
-    .single();
-
-  if (error) throw translateAuthError(error);
+    .single());
   return data;
 }
 
 export async function resetPassword(email) {
   const supabase = await requireSupabase();
   const redirectTo = new URL("nova-senha.html", window.location.href).toString();
-  const { data, error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
-
-  if (error) throw translateAuthError(error);
-  return data;
+  return handleAuthResponse(() => supabase.auth.resetPasswordForEmail(email, { redirectTo }));
 }
 
 export async function updatePassword(password) {
   const supabase = await requireSupabase();
-  const { data, error } = await supabase.auth.updateUser({ password });
-
-  if (error) throw translateAuthError(error);
-  return data;
+  return handleAuthResponse(() => supabase.auth.updateUser({ password }));
 }
 
 export async function onAuthStateChange(callback) {
@@ -130,9 +111,28 @@ async function requireSupabase() {
   return supabase;
 }
 
+async function handleAuthResponse(request) {
+  try {
+    const { data, error } = await request();
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    throw translateAuthError(error);
+  }
+}
+
 function translateAuthError(error) {
   const message = String(error?.message || "Erro de autenticacao.");
   const normalized = message.toLowerCase();
+
+  if (
+    normalized.includes("failed to fetch") ||
+    normalized.includes("networkerror") ||
+    normalized.includes("load failed") ||
+    normalized.includes("cors")
+  ) {
+    return new Error("Nao foi possivel contactar o Supabase. Confirme a ligacao a internet e permita https://angelosantos824.github.io/dozesticker/** em Auth > URL Configuration no projeto Supabase.");
+  }
 
   if (normalized.includes("invalid login credentials")) {
     return new Error("Email ou senha invalidos.");

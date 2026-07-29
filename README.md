@@ -229,6 +229,16 @@ VITE_SUPABASE_ANON_KEY=
 
 Como esta base ainda usa HTML puro sem processo de build, as variaveis Vite nao sao lidas diretamente pelo navegador. Para teste local, informe `url`, `anonKey` e `enabled: true` em `assets/js/config/supabase.js`; nao informe service role, senha, token de usuario ou qualquer segredo privado.
 
+### Checklist de Auth em producao
+
+Para o login funcionar no GitHub Pages, configure o projeto Supabase em Authentication > URL Configuration:
+
+- Site URL: `https://angelosantos824.github.io/dozesticker/`
+- Redirect URLs: `https://angelosantos824.github.io/dozesticker/**`
+- Redirect URLs locais, se necessario: `http://127.0.0.1:8000/**` e `http://localhost:8000/**`
+
+Se o navegador mostrar `CORS Failed` no pedido `OPTIONS` para `/auth/v1/token`, confirme tambem que a URL e a anon/publishable key em `assets/js/config/supabase.js` pertencem ao mesmo projeto Supabase e que o projeto nao esta pausado ou inacessivel.
+
 ## Estrutura do banco
 
 Hierarquia multi-album:
