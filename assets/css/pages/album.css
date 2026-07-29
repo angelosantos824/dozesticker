@@ -133,6 +133,7 @@
 .album-grid {
   display: block;
   width: 100%;
+  max-width: 100%;
   min-width: 0;
 }
 
@@ -144,6 +145,7 @@
   display: grid;
   grid-template-rows: auto 1fr auto;
   width: 100%;
+  max-width: 100%;
   min-width: 0;
   gap: var(--space-3);
   min-height: 17.5rem;
@@ -153,6 +155,11 @@
   background: rgba(248, 250, 252, 0.94);
   color: #07140f;
   padding: var(--space-3);
+}
+
+.album-sticker > * {
+  max-width: 100%;
+  min-width: 0;
 }
 
 .album-sticker.is-owned {
@@ -165,6 +172,7 @@
 
 .album-sticker-frame {
   position: relative;
+  width: 100%;
   min-height: 6.5rem;
   border: 1px dashed rgba(7, 20, 15, 0.28);
   border-radius: var(--radius-sm);
@@ -193,6 +201,7 @@
 .album-sticker-body {
   display: grid;
   gap: var(--space-1);
+  min-width: 0;
 }
 
 .album-sticker-code {
@@ -214,6 +223,8 @@
 }
 
 .album-sticker-state {
+  width: 100%;
+  min-width: 0;
   min-height: 2.55rem;
   border: 1px solid transparent;
   border-radius: var(--radius-md);
@@ -244,6 +255,81 @@
   }
 }
 
+@media (max-width: 768px) {
+  .album-page,
+  .album-content,
+  .album-grid,
+  .sticker-section {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .album-page {
+    padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+  }
+
+  .album-grid .sticker-section-grid,
+  .sticker-section-grid {
+    display: grid;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    gap: 0.75rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .album-sticker {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    min-height: 0;
+    gap: 0.5rem;
+    padding: 0.5rem;
+  }
+
+  .album-sticker > * {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .album-sticker-frame {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    height: auto;
+    min-height: 0;
+    background-size: 0.75rem 0.75rem;
+  }
+
+  .album-sticker-code {
+    font-size: 0.78rem;
+    line-height: 1;
+  }
+
+  .album-sticker h3 {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    font-size: 0.88rem;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+
+  .album-sticker p {
+    font-size: 0.72rem;
+    line-height: 1.2;
+  }
+
+  .album-sticker-state {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    padding: 0.65rem 0.35rem;
+    font-size: 0.82rem;
+  }
+}
+
 @media (max-width: 560px) {
   .album-overview {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -264,7 +350,6 @@
   }
 
   .album-grid .sticker-section-grid {
-    gap: var(--space-2);
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -318,28 +403,19 @@
   }
 
   .album-grid .sticker-section-grid {
-    gap: var(--space-2);
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .album-sticker {
-    min-height: 12rem;
-    gap: var(--space-2);
-    padding: var(--space-2);
+    min-height: 0;
   }
 
   .album-sticker-frame {
-    min-height: 4.25rem;
-    background-size: 0.75rem 0.75rem;
+    min-height: 0;
   }
 
   .album-sticker h3 {
-    display: -webkit-box;
-    overflow: hidden;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
-    font-size: 0.78rem;
-    line-height: 1.15;
+    font-size: 0.82rem;
   }
 
   .album-sticker p {
@@ -347,10 +423,7 @@
   }
 
   .album-sticker-state {
-    min-height: 2.1rem;
-    padding: 0 var(--space-1);
-    font-size: 0.68rem;
-    line-height: 1;
+    font-size: 0.76rem;
   }
 
   .album-sticker-code {
@@ -367,7 +440,13 @@
   }
 }
 
-@media (max-width: 360px) {
+@media (max-width: 380px) {
+  .album-sticker-frame {
+    aspect-ratio: 1 / 0.72;
+  }
+}
+
+@media (max-width: 339px) {
   .album-grid .sticker-section-grid {
     grid-template-columns: 1fr;
   }
