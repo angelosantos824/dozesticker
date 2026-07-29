@@ -269,20 +269,27 @@
     padding-bottom: calc(6rem + env(safe-area-inset-bottom));
   }
 
-  .album-grid .sticker-section-grid,
   .sticker-section-grid {
     display: grid;
     width: 100%;
     max-width: 100%;
     min-width: 0;
-    gap: 0.75rem;
+    gap: 0.625rem;
+    grid-auto-flow: row;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .album-sticker {
-    width: 100%;
+  .sticker-section-grid > .album-sticker {
+    grid-column: auto;
+    grid-row: auto;
+    width: auto;
     max-width: 100%;
     min-width: 0;
+    margin: 0;
+    box-sizing: border-box;
+  }
+
+  .album-sticker {
     min-height: 0;
     gap: 0.5rem;
     padding: 0.5rem;
@@ -316,6 +323,12 @@
     overflow-wrap: anywhere;
   }
 
+  .album-sticker-title {
+    font-size: 0.82rem;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+  }
+
   .album-sticker p {
     font-size: 0.72rem;
     line-height: 1.2;
@@ -324,9 +337,9 @@
   .album-sticker-state {
     width: 100%;
     min-width: 0;
-    min-height: 44px;
-    padding: 0.65rem 0.35rem;
-    font-size: 0.82rem;
+    min-height: 42px;
+    padding: 0.55rem 0.25rem;
+    font-size: 0.78rem;
   }
 }
 
@@ -349,7 +362,7 @@
     justify-items: start;
   }
 
-  .album-grid .sticker-section-grid {
+  .sticker-section-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -402,7 +415,7 @@
     font-size: 1.2rem;
   }
 
-  .album-grid .sticker-section-grid {
+  .sticker-section-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -447,7 +460,7 @@
 }
 
 @media (max-width: 339px) {
-  .album-grid .sticker-section-grid {
+  .sticker-section-grid {
     grid-template-columns: 1fr;
   }
 
