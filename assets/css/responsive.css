@@ -1,3 +1,9 @@
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 @media (max-width: 1180px) {
   .stats-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -15,7 +21,11 @@
 
   .main-content {
     margin-left: 0;
-    padding: var(--space-5) var(--space-4) calc(var(--bottom-nav-height) + var(--space-5));
+    padding:
+      var(--space-5)
+      max(var(--space-4), env(safe-area-inset-right))
+      calc(var(--bottom-nav-height) + var(--space-5) + env(safe-area-inset-bottom))
+      max(var(--space-4), env(safe-area-inset-left));
   }
 
   .mobile-nav {
@@ -25,6 +35,7 @@
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     min-height: var(--bottom-nav-height);
+    padding-bottom: env(safe-area-inset-bottom);
     border-top: 1px solid var(--color-border);
     background: rgba(7, 20, 15, 0.94);
     backdrop-filter: blur(18px);
@@ -34,8 +45,10 @@
     justify-content: center;
     flex-direction: column;
     gap: 0.2rem;
+    min-height: 3.1rem;
     border-radius: 0;
     font-size: 0.72rem;
+    text-align: center;
   }
 
   .page-header,
@@ -50,12 +63,55 @@
     grid-template-columns: 1fr;
   }
 
-  .album-preview {
+  .stadium-preview,
+  .stadium-preview img {
     min-height: 18rem;
   }
 
   .toolbar {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-header {
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+  }
+
+  .page-header h1,
+  .hero-panel h1 {
+    font-size: 2rem;
+  }
+
+  .header-tools,
+  .actions-row,
+  .filter-tabs {
+    width: 100%;
+  }
+
+  .filter-tabs {
+    display: flex;
+    overflow-x: auto;
+    padding-bottom: var(--space-1);
+    scroll-snap-type: x proximity;
+  }
+
+  .filter-tab,
+  .button,
+  .field input,
+  .field select,
+  .field textarea {
+    min-height: 2.75rem;
+  }
+
+  .admin-ads-grid,
+  .admin-ad-row {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-ad-actions {
+    justify-content: start;
   }
 }
 
@@ -69,14 +125,15 @@
     padding: var(--space-4);
   }
 
-  .preview-card {
-    width: 5.5rem;
-    height: 7.2rem;
+  .stadium-preview,
+  .stadium-preview img {
+    min-height: 15.5rem;
   }
 
   .toast-region {
-    right: var(--space-3);
-    bottom: calc(var(--bottom-nav-height) + var(--space-3));
+    right: max(var(--space-3), env(safe-area-inset-right));
+    left: max(var(--space-3), env(safe-area-inset-left));
+    bottom: calc(var(--bottom-nav-height) + var(--space-3) + env(safe-area-inset-bottom));
   }
 
   .trade-content {
@@ -112,5 +169,73 @@
 
   .trade-code {
     width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .main-content {
+    padding-top: var(--space-4);
+    padding-inline: max(var(--space-3), env(safe-area-inset-left)) max(var(--space-3), env(safe-area-inset-right));
+  }
+
+  .page-header h1,
+  .hero-panel h1 {
+    font-size: 1.75rem;
+  }
+
+  .recent-row,
+  .summary-row,
+  .team-row-header {
+    grid-template-columns: 1fr;
+  }
+
+  .mobile-nav-link {
+    font-size: 0.68rem;
+  }
+
+  .ad-carousel {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+  }
+
+  .ad-card {
+    flex: 0 0 100%;
+    scroll-snap-align: start;
+  }
+
+  .ad-actions .button,
+  .ad-map-actions .button,
+  .admin-ad-actions .button {
+    width: 100%;
+  }
+
+  .admin-form-pair {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 360px) {
+  .main-content {
+    padding-inline: max(var(--space-2), env(safe-area-inset-left)) max(var(--space-2), env(safe-area-inset-right));
+  }
+
+  .mobile-nav-link {
+    font-size: 0.64rem;
+  }
+
+  .surface,
+  .page-panel {
+    padding: var(--space-3);
+  }
+}
+
+@media (max-height: 520px) and (orientation: landscape) and (max-width: 860px) {
+  .main-content {
+    padding-top: var(--space-3);
+  }
+
+  .mobile-nav-link {
+    min-height: 2.75rem;
   }
 }

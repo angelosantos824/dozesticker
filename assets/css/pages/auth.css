@@ -2,10 +2,16 @@
   min-height: 100vh;
   display: grid;
   place-items: center;
-  padding: var(--space-6);
+  padding:
+    max(var(--space-6), env(safe-area-inset-top))
+    max(var(--space-6), env(safe-area-inset-right))
+    max(var(--space-6), env(safe-area-inset-bottom))
+    max(var(--space-6), env(safe-area-inset-left));
   background:
-    radial-gradient(circle at 20% 20%, rgba(34, 197, 94, 0.15), transparent 24rem),
-    linear-gradient(145deg, var(--color-bg) 0%, #092018 54%, #06110d 100%);
+    radial-gradient(circle at 50% 18%, rgba(181, 92, 255, 0.52), transparent 28rem),
+    linear-gradient(145deg, rgba(7, 5, 13, 0.72) 0%, rgba(16, 11, 28, 0.84) 54%, rgba(7, 5, 13, 0.94) 100%),
+    url("../../images/brand/stadium-full.png") center / cover no-repeat;
+  background-attachment: fixed;
 }
 
 .auth-shell {
@@ -23,15 +29,28 @@
   font-weight: 900;
 }
 
+.auth-brand img {
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: var(--radius-md);
+}
+
+.auth-brand small {
+  display: block;
+  color: var(--color-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
 .auth-brand .brand-mark {
   display: grid;
   width: 2.4rem;
   height: 2.4rem;
   place-items: center;
-  border: 1px solid rgba(134, 239, 172, 0.48);
+  border: 1px solid rgba(168, 85, 247, 0.55);
   border-radius: var(--radius-md);
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.95), rgba(56, 189, 248, 0.75));
-  color: #052015;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-neon-blue));
+  color: var(--color-white);
   font-weight: 900;
 }
 
@@ -120,5 +139,28 @@
 @media (max-width: 768px) {
   .profile-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-page {
+    align-items: start;
+    padding:
+      max(var(--space-4), env(safe-area-inset-top))
+      max(var(--space-3), env(safe-area-inset-right))
+      max(var(--space-4), env(safe-area-inset-bottom))
+      max(var(--space-3), env(safe-area-inset-left));
+  }
+
+  .auth-card h1 {
+    font-size: 1.55rem;
+  }
+
+  .auth-links {
+    display: grid;
+  }
+
+  .profile-summary {
+    align-items: flex-start;
   }
 }

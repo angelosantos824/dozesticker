@@ -28,6 +28,7 @@
   align-items: end;
   justify-content: space-between;
   gap: var(--space-3);
+  min-width: 0;
 }
 
 .album-type-filter {
@@ -53,10 +54,11 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: rgba(13, 33, 25, 0.82);
+  scroll-snap-type: x proximity;
 }
 
 .album-nav-item {
-  min-height: 2.45rem;
+  min-height: 2.75rem;
   border: 1px solid transparent;
   border-radius: var(--radius-md);
   background: transparent;
@@ -64,6 +66,7 @@
   padding: 0 var(--space-3);
   text-align: left;
   font-weight: 850;
+  scroll-snap-align: start;
 }
 
 .album-nav-item[aria-pressed="true"] {
@@ -135,6 +138,7 @@
 
 .album-sticker {
   display: grid;
+  grid-template-rows: auto 1fr auto;
   gap: var(--space-3);
   min-height: 17.5rem;
   border: 1px solid var(--color-border);
@@ -146,7 +150,7 @@
 }
 
 .album-sticker.is-owned {
-  --sticker-state: var(--color-primary);
+  --sticker-state: var(--color-success);
 }
 
 .album-sticker.is-missing {
@@ -210,6 +214,7 @@
   background: var(--sticker-state);
   color: #04140f;
   font-weight: 950;
+  touch-action: manipulation;
 }
 
 @media (max-width: 1024px) {
@@ -254,5 +259,93 @@
 
   .album-grid .sticker-section-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .album-page {
+    gap: var(--space-3);
+  }
+
+  .album-header {
+    margin-bottom: 0;
+  }
+
+  .album-header h1 {
+    font-size: 1.7rem;
+  }
+
+  .album-overview {
+    gap: var(--space-2);
+  }
+
+  .album-overview .mini-stat {
+    min-height: 4.2rem;
+    padding: var(--space-3);
+  }
+
+  .album-search input {
+    min-height: 2.9rem;
+  }
+
+  .album-filters .filter-tabs {
+    min-width: 0;
+  }
+
+  .album-type-filter {
+    width: 100%;
+  }
+
+  .album-nav {
+    margin-inline: calc(var(--space-3) * -1);
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .album-section-header {
+    gap: var(--space-2);
+    padding: var(--space-3);
+  }
+
+  .album-section-header h2 {
+    font-size: 1.2rem;
+  }
+
+  .album-grid .sticker-section-grid {
+    gap: var(--space-2);
+  }
+
+  .album-sticker {
+    min-height: 14.75rem;
+    gap: var(--space-2);
+    padding: var(--space-2);
+  }
+
+  .album-sticker-frame {
+    min-height: 5.2rem;
+  }
+
+  .album-sticker h3 {
+    font-size: 0.92rem;
+  }
+
+  .album-sticker p {
+    font-size: 0.75rem;
+  }
+
+  .album-sticker-state {
+    min-height: 2.75rem;
+    font-size: 0.82rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .album-grid .sticker-section-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .album-sticker-code,
+  .album-sticker h3,
+  .album-sticker p {
+    overflow-wrap: anywhere;
   }
 }

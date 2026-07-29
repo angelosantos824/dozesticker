@@ -1,12 +1,14 @@
 import { isSupabaseConfigured, supabaseConfig } from "../config/supabase.js";
-import { OPERATIONAL_CATALOG_TOTAL, createFallbackWorldCupCatalog, isOperationalSticker } from "../data/world-cup-2026.catalog.js";
+import { OPERATIONAL_CATALOG_TOTAL, SECTION_ORDER_MAP, createFallbackWorldCupCatalog, isOperationalSticker } from "../data/world-cup-2026.catalog.js";
 import { getCurrentUser, getSession } from "./auth.service.js";
+import { getSupabaseClient } from "./supabase-client.js";
 import { readStorage, writeStorage } from "../utils/storage.js";
 
 const fallbackCatalog = createFallbackWorldCupCatalog();
 const syncQueueKey = "sync-queue";
 const recentSearchesKey = "recent-searches";
 const anonymousUserId = "anonymous";
+const batchSize = 100;
 
 let catalogCache;
 let sectionsCache = fallbackCatalog.sections;
@@ -16,14 +18,28 @@ let activeUserId = anonymousUserId;
 let activeCatalogUserId = "";
 let activeCatalogSource = "fallback";
 let syncPromise = null;
+let recoveryPromise = null;
+let realtimeChannel = null;
+let realtimeUserId = "";
 const recoveredUsers = new Set();
 
 window.addEventListener("online", () => {
-  syncPendingChanges();
+  void syncPendingChanges().then(() => refreshRemoteOwnership());
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    void refreshRemoteOwnership();
+  }
+});
+
+window.addEventListener("pageshow", () => {
+  void refreshRemoteOwnership();
 });
 
 window.addEventListener("dozesticker:auth-signed-out", () => {
   clearCollectionCache();
+  void removeRealtimeSubscription();
 });
 
 export async function getCollections() {
@@ -202,23 +218,15 @@ async function ensureCatalog() {
   writeMergedLocalOwnership(userId, mergedOwnership, validStickerIds);
   catalogCache = mergeOwnership(base.stickers, mergedOwnership);
   logCatalogSource(catalogCache);
+  setupRealtimeSubscription(userId);
 
   if (userId !== anonymousUserId && remoteData && !recoveredUsers.has(userId)) {
-    enqueueLocalRecoveryChanges(userId, validStickerIds, localOwnership, remoteOwnership);
     recoveredUsers.add(userId);
-    await syncPendingChanges();
-    const refreshedOwnership = await tryReloadRemoteOwnership(userId);
-    if (refreshedOwnership) {
-      const afterSyncOwnership = mergeOwnershipPriority(
-        validStickerIds,
-        getPendingOwnership(userId, validStickerIds),
-        getLocalOwnership(userId),
-        refreshedOwnership
-      );
-      writeMergedLocalOwnership(userId, afterSyncOwnership, validStickerIds);
-      catalogCache = mergeOwnership(base.stickers, afterSyncOwnership);
-      logCatalogSource(catalogCache);
-    }
+    void syncRecoveryInBackground(userId, base.stickers, validStickerIds, localOwnership, remoteOwnership)
+      .catch((error) => {
+        console.error("Erro na recuperacao em background", error);
+        emitSyncStatus("error", "Sincronizacao pendente");
+      });
   }
 
   return catalogCache;
@@ -228,7 +236,7 @@ function createFallbackCatalog() {
   activeCatalogSource = isSupabaseConfigured() ? "fallback" : "local";
   collectionsCache = fallbackCatalog.collections;
   albumsCache = normalizeAlbums(fallbackCatalog.albums);
-  sectionsCache = fallbackCatalog.sections.slice().sort(compareSections);
+  sectionsCache = normalizeVisibleSections(fallbackCatalog.sections);
 
   return {
     stickers: fallbackCatalog.stickers.filter(isOperationalSticker)
@@ -239,7 +247,7 @@ function createRemoteCatalog(remoteData) {
   activeCatalogSource = "supabase";
   collectionsCache = fallbackCatalog.collections;
   albumsCache = normalizeAlbums(fallbackCatalog.albums);
-  sectionsCache = remoteData.sections.slice().sort(compareSections);
+  sectionsCache = normalizeVisibleSections(remoteData.sections);
 
   return {
     stickers: mergeLocalAndRemoteStickers(fallbackCatalog.stickers, remoteData.stickers)
@@ -264,7 +272,7 @@ async function loadRemoteData(userId) {
     requestSupabase("/sections?select=id,album_id,slug,name,display_order,status&status=eq.active")
   ]);
 
-  const sections = remoteSections.map(enrichRemoteSection).sort(compareSections);
+  const sections = normalizeVisibleSections(remoteSections.map(enrichRemoteSection));
   const sectionsById = new Map(sections.map((section) => [section.id, section]));
   const ownership = new Map(userStickers.map((item) => [item.sticker_id, Boolean(item.has_sticker)]));
   const stickers = remoteStickers
@@ -388,6 +396,21 @@ function enrichRemoteSection(section) {
   };
 }
 
+function normalizeVisibleSections(sections) {
+  return sections
+    .map((section) => ({
+      ...section,
+      display_order: getSectionDisplayOrder(section)
+    }))
+    .filter((section) => section.kind !== "group")
+    .sort(compareSections);
+}
+
+function getSectionDisplayOrder(section) {
+  const code = String(section.team_code || section.code || section.group_code || section.slug || "").toUpperCase();
+  return SECTION_ORDER_MAP.get(code) || Number(section.display_order ?? 999);
+}
+
 function mergeOwnership(items, ownership) {
   return items.filter(isOperationalSticker).map((item) => ({
     ...item,
@@ -446,6 +469,131 @@ function enqueueLocalRecoveryChanges(userId, validStickerIds, localOwnership, re
   });
 }
 
+async function syncRecoveryInBackground(userId, baseStickers, validStickerIds, localOwnership, remoteOwnership) {
+  if (recoveryPromise) return recoveryPromise;
+
+  recoveryPromise = (async () => {
+    emitSyncStatus("syncing", "Sincronizando colecao...");
+    enqueueLocalRecoveryChanges(userId, validStickerIds, localOwnership, remoteOwnership);
+    await syncPendingChanges();
+
+    const refreshedOwnership = await tryReloadRemoteOwnership(userId);
+    if (refreshedOwnership) {
+      const afterSyncOwnership = mergeOwnershipPriority(
+        validStickerIds,
+        getPendingOwnership(userId, validStickerIds),
+        getLocalOwnership(userId),
+        refreshedOwnership
+      );
+      writeMergedLocalOwnership(userId, afterSyncOwnership, validStickerIds);
+      catalogCache = mergeOwnership(baseStickers, afterSyncOwnership);
+      logCatalogSource(catalogCache);
+    }
+
+    emitSyncStatus("synced", "Colecao sincronizada");
+    window.dispatchEvent(new CustomEvent("dozesticker:collection-change", {
+      detail: { userId, source: "background-sync" }
+    }));
+  })().finally(() => {
+    recoveryPromise = null;
+  });
+
+  return recoveryPromise;
+}
+
+async function refreshRemoteOwnership(userId = activeUserId) {
+  if (!catalogCache || !canUseRemote(userId)) return null;
+
+  const refreshedOwnership = await tryReloadRemoteOwnership(userId);
+  if (!refreshedOwnership) return null;
+
+  const validStickerIds = getValidStickerIds(catalogCache);
+  const mergedOwnership = mergeOwnershipPriority(
+    validStickerIds,
+    getPendingOwnership(userId, validStickerIds),
+    getLocalOwnership(userId),
+    refreshedOwnership
+  );
+
+  writeMergedLocalOwnership(userId, mergedOwnership, validStickerIds);
+  catalogCache = mergeOwnership(catalogCache, mergedOwnership);
+  window.dispatchEvent(new CustomEvent("dozesticker:collection-change", {
+    detail: { userId, source: "remote-refresh" }
+  }));
+  return mergedOwnership;
+}
+
+function setupRealtimeSubscription(userId) {
+  if (!canUseRemote(userId)) {
+    void removeRealtimeSubscription();
+    return;
+  }
+
+  if (realtimeChannel && realtimeUserId === userId) return;
+
+  void (async () => {
+    await removeRealtimeSubscription();
+    const supabase = await getSupabaseClient();
+    if (!supabase) return;
+
+    realtimeUserId = userId;
+    realtimeChannel = supabase
+      .channel(`dozesticker-user-stickers-${userId}`)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "dozesticker",
+        table: "user_stickers",
+        filter: `user_id=eq.${userId}`
+      }, handleRealtimeOwnershipChange)
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          emitSyncStatus("synced", "Colecao sincronizada");
+        }
+      });
+  })().catch((error) => {
+    console.error("Erro ao assinar atualizacoes da colecao", error);
+  });
+}
+
+async function removeRealtimeSubscription() {
+  if (!realtimeChannel) {
+    realtimeUserId = "";
+    return;
+  }
+
+  const channel = realtimeChannel;
+  realtimeChannel = null;
+  realtimeUserId = "";
+
+  const supabase = await getSupabaseClient();
+  if (supabase) {
+    await supabase.removeChannel(channel);
+  }
+}
+
+function handleRealtimeOwnershipChange(payload) {
+  const row = payload.new || payload.old;
+  if (!row?.user_id || row.user_id !== activeUserId || !row.sticker_id) return;
+
+  const hasSticker = payload.eventType === "DELETE" ? false : Boolean(row.has_sticker);
+  const owned = getLocalOwnership(row.user_id);
+  owned[row.sticker_id] = hasSticker;
+  writeStorage(getOwnershipKey(row.user_id), owned);
+
+  if (catalogCache) {
+    catalogCache = mergeOwnership(catalogCache, owned);
+  }
+
+  window.dispatchEvent(new CustomEvent("dozesticker:collection-change", {
+    detail: {
+      userId: row.user_id,
+      stickerId: row.sticker_id,
+      hasSticker,
+      source: "realtime"
+    }
+  }));
+}
+
 async function runSyncPendingChanges() {
   if (!navigator.onLine || !isSupabaseConfigured()) {
     console.log("[SYNC] sincronização cancelada", !navigator.onLine ? "navegador offline" : "Supabase não configurado");
@@ -462,6 +610,7 @@ async function runSyncPendingChanges() {
   const aliasMap = catalogCache ? createStickerAliasMap(catalogCache) : new Map();
   const queue = getSyncQueue();
   const remaining = [];
+  const validChanges = [];
 
   for (const change of queue) {
     if (change.userId !== userId) {
@@ -476,15 +625,32 @@ async function runSyncPendingChanges() {
       continue;
     }
 
+    validChanges.push({ ...change, stickerId: remoteStickerId });
+  }
+
+  const dedupedChanges = dedupeQueueChanges(validChanges);
+
+  if (dedupedChanges.length) {
+    emitSyncStatus("syncing", "Sincronizando colecao...");
+  }
+
+  for (const batch of chunkArray(dedupedChanges, batchSize)) {
     try {
-      await upsertRemoteOwnership(change.userId, remoteStickerId, change.hasSticker);
+      await upsertRemoteOwnershipBatch(batch);
     } catch (error) {
-      console.error("Erro ao sincronizar figurinha", error);
-      remaining.push({ ...change, stickerId: remoteStickerId, attempts: Number(change.attempts || 0) + 1 });
+      console.error("Erro ao sincronizar lote de figurinhas", error);
+      remaining.push(...batch.map((change) => ({
+        ...change,
+        attempts: Number(change.attempts || 0) + 1
+      })));
     }
   }
 
   writeStorage(syncQueueKey, remaining);
+  emitSyncStatus(
+    remaining.some((item) => item.userId === userId) ? "pending" : "synced",
+    remaining.some((item) => item.userId === userId) ? "Sincronizacao pendente" : "Colecao sincronizada"
+  );
   return getConnectionState();
 }
 
@@ -544,6 +710,67 @@ async function upsertRemoteOwnership(userId, stickerId, hasSticker) {
     });
     throw error;
   }
+}
+
+async function upsertRemoteOwnershipBatch(changes) {
+  const payload = changes
+    .filter((change) => isUuid(change.stickerId))
+    .map((change) => ({
+      user_id: change.userId,
+      sticker_id: change.stickerId,
+      has_sticker: Boolean(change.hasSticker)
+    }));
+
+  if (!payload.length) return [];
+
+  console.log("[SYNC] enviando", payload);
+
+  try {
+    const data = await requestSupabase("/user_stickers?on_conflict=user_id,sticker_id", {
+      method: "POST",
+      headers: {
+        Prefer: "resolution=merge-duplicates,return=minimal"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    console.log("[SYNC] resposta", {
+      data,
+      error: null
+    });
+    return data;
+  } catch (error) {
+    console.log("[SYNC] resposta", {
+      data: null,
+      error
+    });
+    throw error;
+  }
+}
+
+function dedupeQueueChanges(changes) {
+  const bySticker = new Map();
+  changes.forEach((change) => {
+    bySticker.set(`${change.userId}:${change.stickerId}`, change);
+  });
+  return [...bySticker.values()];
+}
+
+function chunkArray(items, size) {
+  const chunks = [];
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+  return chunks;
+}
+
+function emitSyncStatus(status, message) {
+  window.dispatchEvent(new CustomEvent("dozesticker:sync-status", {
+    detail: {
+      status,
+      message
+    }
+  }));
 }
 
 function createQueueChange(userId, stickerId, hasSticker) {

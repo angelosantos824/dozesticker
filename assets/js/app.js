@@ -1,6 +1,7 @@
 import { renderNavigation } from "./components/navigation.js";
 import { bindToastButtons, showToast } from "./components/toast.js";
 import { AlbumNavigation } from "./components/AlbumNavigation.js";
+import { AdCarousel, openMapMenu } from "./components/AdCard.js";
 import { ProgressBar } from "./components/ProgressBar.js";
 import { SearchBar } from "./components/SearchBar.js";
 import { SectionHeader } from "./components/SectionHeader.js";
@@ -31,9 +32,16 @@ import {
   markSticker,
   removeSticker,
   searchStickers,
-  syncPendingChanges,
   toggleSticker
 } from "./services/collection.service.js";
+import {
+  deleteAd,
+  getActiveAds,
+  getAdminAds,
+  saveAd,
+  updateAdStatus,
+  uploadAdImage
+} from "./services/ads.service.js";
 
 const statusLabels = {
   todas: "Todas",
@@ -85,13 +93,130 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (page === "troca") await renderTradeMode();
   if (page === "feira") await renderFairMode();
   if (page === "album") await renderAlbumPage();
+  if (page === "admin-anuncios") await renderAdsAdmin();
   if (placeholderPages[page]) renderPlaceholder(page);
+  if (page === "index") renderPublicHome();
+  renderDozedevFooter();
 });
 
 function registerServiceWorker() {
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("./service-worker.js").catch(() => {});
   }
+}
+
+function renderDozedevFooter() {
+  if (document.querySelector(".dozedev-footer")) return;
+  const container = document.querySelector(".main-content") || document.querySelector(".fair-page");
+  if (!container) return;
+  container.insertAdjacentHTML("beforeend", `
+    <footer class="dozedev-footer">
+      Desenvolvido por DOZEDEV &middot; <a href="https://dozedev.pt" target="_blank" rel="noopener noreferrer">dozedev.pt</a>
+    </footer>
+  `);
+}
+
+function renderPublicHome() {
+  const adsArea = document.querySelector("[data-public-ads]");
+  if (!adsArea) return;
+
+  getActiveAds()
+    .then((ads) => {
+      adsArea.innerHTML = AdCarousel(ads);
+      bindAdMapActions(adsArea, ads);
+    })
+    .catch(() => {
+      adsArea.innerHTML = "";
+    });
+}
+
+async function renderAdsAdmin() {
+  const area = document.querySelector("[data-ads-admin]");
+  if (!area) return;
+
+  let ads = [];
+  let editingAd = null;
+
+  const paint = async () => {
+    try {
+      ads = await getAdminAds();
+      area.innerHTML = adsAdminTemplate(ads, editingAd);
+    } catch (error) {
+      area.innerHTML = `
+        <div class="surface empty-state">
+          <div>
+            <h2>Acesso restrito</h2>
+            <p>Apenas administradores da plataforma podem gerenciar anuncios.</p>
+          </div>
+        </div>
+      `;
+    }
+  };
+
+  area.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-ad-action]");
+    if (!button) return;
+    const id = button.dataset.adId;
+    const action = button.dataset.adAction;
+    const ad = ads.find((item) => item.id === id);
+
+    try {
+      if (action === "new") editingAd = null;
+      if (action === "edit") editingAd = ad;
+      if (action === "duplicate") editingAd = { ...ad, id: "", title: `${ad.title} copia`, status: "draft" };
+      if (action === "activate") await updateAdStatus(id, "active");
+      if (action === "deactivate") await updateAdStatus(id, "inactive");
+      if (action === "delete" && window.confirm("Excluir este anuncio?")) await deleteAd(id);
+      if (action === "preview") {
+        showToast(ad.title || "Anuncio", { duration: 2500 });
+      }
+      await paint();
+    } catch (error) {
+      showToast(error.message || "Erro ao atualizar anuncio");
+    }
+  });
+
+  area.addEventListener("submit", async (event) => {
+    const form = event.target.closest("[data-ad-form]");
+    if (!form) return;
+    event.preventDefault();
+    const submit = form.querySelector("[type='submit']");
+    setLoading(submit, true, "Salvando...");
+
+    try {
+      const formData = new FormData(form);
+      const file = formData.get("image");
+      const imageUrl = file?.size ? await uploadAdImage(file) : formData.get("image_url");
+      await saveAd({
+        id: formData.get("id"),
+        title: formData.get("title"),
+        description: formData.get("description"),
+        image_url: imageUrl,
+        cta_label: formData.get("cta_label"),
+        destination_url: formData.get("destination_url"),
+        whatsapp: formData.get("whatsapp"),
+        phone: formData.get("phone"),
+        address: formData.get("address"),
+        latitude: formData.get("latitude"),
+        longitude: formData.get("longitude"),
+        google_maps_url: formData.get("google_maps_url"),
+        apple_maps_url: formData.get("apple_maps_url"),
+        starts_at: formData.get("starts_at"),
+        ends_at: formData.get("ends_at"),
+        display_order: formData.get("display_order"),
+        status: formData.get("status")
+      });
+      editingAd = null;
+      await paint();
+      showToast("Anuncio salvo");
+    } catch (error) {
+      showToast(error.message || "Erro ao salvar anuncio");
+    } finally {
+      setLoading(submit, false, "Salvar anuncio");
+    }
+  });
+
+  await paint();
 }
 
 async function renderLogin() {
@@ -477,8 +602,10 @@ async function renderFairMode() {
   const statusArea = document.querySelector("[data-sync-status]");
   const recentArea = document.querySelector("[data-recent-searches]");
   const fullscreenButton = document.querySelector("[data-fair-fullscreen]");
+  const backButton = document.querySelector("[data-fair-back]");
   const sections = await getSections();
   let currentItems = [];
+  let syncMessage = "";
 
   const paintStatus = () => {
     const state = getConnectionState();
@@ -496,7 +623,6 @@ async function renderFairMode() {
   };
 
   const paint = async () => {
-    await syncPendingChanges();
     const stats = await getStats();
     statsArea.innerHTML = compactStats(stats);
     currentItems = await listCollection({ query: search.value, status: "faltam" });
@@ -547,6 +673,14 @@ async function renderFairMode() {
     search.focus();
   });
 
+  backButton?.addEventListener("click", () => {
+    if (window.history.length > 1) {
+      window.history.back();
+      return;
+    }
+    window.location.href = "album.html";
+  });
+
   search.addEventListener("input", paint);
   search.addEventListener("keydown", async (event) => {
     if (event.key === "Escape") {
@@ -563,6 +697,26 @@ async function renderFairMode() {
 
   window.addEventListener("online", paint);
   window.addEventListener("offline", paintStatus);
+  window.addEventListener("dozesticker:sync-status", (event) => {
+    syncMessage = event.detail?.message || "";
+    if (!syncMessage) {
+      paintStatus();
+      return;
+    }
+
+    const state = getConnectionState();
+    statusArea.innerHTML = `
+      <span class="connection-dot ${state.online ? "is-online" : "is-offline"}" aria-hidden="true"></span>
+      <span>${syncMessage}</span>
+    `;
+
+    window.setTimeout(() => {
+      if (syncMessage === event.detail?.message) {
+        syncMessage = "";
+        paintStatus();
+      }
+    }, 2600);
+  });
 
   search.focus();
   await paint();
@@ -667,20 +821,27 @@ async function renderAlbumPage() {
     if (!button) return;
     const stickerId = button.dataset.stickerId;
     const nextValue = button.dataset.hasSticker !== "true";
-    await toggleSticker(stickerId, nextValue);
-    await paint();
-    showToast(nextValue ? "Figurinha adicionada" : "Figurinha removida", {
-      actionLabel: "Desfazer",
-      duration: 5000,
-      onAction: async () => {
-        if (nextValue) {
-          await removeSticker(stickerId);
-        } else {
-          await markSticker(stickerId);
+    button.disabled = true;
+    try {
+      await toggleSticker(stickerId, nextValue);
+      await paint();
+      showToast(nextValue ? "Figurinha adicionada" : "Figurinha removida", {
+        actionLabel: "Desfazer",
+        duration: 5000,
+        onAction: async () => {
+          if (nextValue) {
+            await removeSticker(stickerId);
+          } else {
+            await markSticker(stickerId);
+          }
+          await paint();
         }
-        await paint();
+      });
+    } finally {
+      if (button.isConnected) {
+        button.disabled = false;
       }
-    });
+    }
   });
 
   search.addEventListener("input", paint);
@@ -747,6 +908,121 @@ function albumStats(stats) {
     <article class="surface mini-stat"><span>%</span><strong>${stats.progress}%</strong></article>
     <article class="surface mini-stat"><span>Duplicadas</span><strong>${stats.duplicates}</strong></article>
   `;
+}
+
+function adsAdminTemplate(ads, editingAd) {
+  const ad = editingAd || {};
+  return `
+    <header class="page-header">
+      <div>
+        <p class="eyebrow">Administracao</p>
+        <h1>Anuncios</h1>
+      </div>
+      <button class="button button-primary" type="button" data-ad-action="new">Novo anuncio</button>
+    </header>
+
+    <section class="admin-ads-grid">
+      <form class="surface admin-ad-form" data-ad-form>
+        <input type="hidden" name="id" value="${escapeAttribute(ad.id || "")}">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">${ad.id ? "Editar" : "Novo"}</p>
+            <h2>Anuncio</h2>
+          </div>
+        </div>
+        ${adField("Titulo", "title", ad.title, "text", true)}
+        <label class="field"><span>Descricao</span><textarea name="description">${escapeHtml(ad.description || "")}</textarea></label>
+        ${adField("Imagem atual", "image_url", ad.image_url, "url")}
+        <label class="field"><span>Nova imagem</span><input name="image" type="file" accept="image/png,image/jpeg,image/webp"></label>
+        ${adField("Texto do botao", "cta_label", ad.cta_label)}
+        ${adField("Link externo", "destination_url", ad.destination_url, "url")}
+        ${adField("WhatsApp", "whatsapp", ad.whatsapp)}
+        ${adField("Telefone", "phone", ad.phone)}
+        ${adField("Endereco", "address", ad.address)}
+        <div class="admin-form-pair">
+          ${adField("Latitude", "latitude", ad.latitude, "number")}
+          ${adField("Longitude", "longitude", ad.longitude, "number")}
+        </div>
+        ${adField("Google Maps", "google_maps_url", ad.google_maps_url, "url")}
+        ${adField("Apple Maps", "apple_maps_url", ad.apple_maps_url, "url")}
+        <div class="admin-form-pair">
+          ${adField("Inicio", "starts_at", toDateTimeLocal(ad.starts_at), "datetime-local")}
+          ${adField("Fim", "ends_at", toDateTimeLocal(ad.ends_at), "datetime-local")}
+        </div>
+        <div class="admin-form-pair">
+          ${adField("Ordem", "display_order", ad.display_order ?? 0, "number")}
+          <label class="field">
+            <span>Status</span>
+            <select name="status">
+              ${["draft", "active", "inactive", "expired"].map((status) => `<option value="${status}" ${status === (ad.status || "draft") ? "selected" : ""}>${status}</option>`).join("")}
+            </select>
+          </label>
+        </div>
+        <button class="button button-primary" type="submit">Salvar anuncio</button>
+      </form>
+
+      <section class="admin-ad-list" aria-label="Anuncios cadastrados">
+        ${ads.length ? ads.map(adminAdRow).join("") : emptyMessage("Nenhum anuncio", "Crie o primeiro anuncio para exibir na pagina publica.")}
+      </section>
+    </section>
+  `;
+}
+
+function adField(label, name, value = "", type = "text", required = false) {
+  return `
+    <label class="field">
+      <span>${label}</span>
+      <input name="${name}" type="${type}" value="${escapeAttribute(value ?? "")}" ${required ? "required" : ""}>
+    </label>
+  `;
+}
+
+function adminAdRow(ad) {
+  return `
+    <article class="surface admin-ad-row">
+      <div class="admin-ad-thumb">${ad.image_url ? `<img src="${escapeAttribute(ad.image_url)}" alt="" loading="lazy">` : "12"}</div>
+      <div>
+        <h2>${escapeHtml(ad.title)}</h2>
+        <p class="muted">${escapeHtml(ad.status)} · ordem ${Number(ad.display_order || 0)}</p>
+        <p class="muted">${formatDate(ad.starts_at)} - ${formatDate(ad.ends_at)}</p>
+      </div>
+      <div class="admin-ad-actions">
+        <button class="button button-secondary" type="button" data-ad-action="edit" data-ad-id="${escapeAttribute(ad.id)}">Editar</button>
+        <button class="button button-secondary" type="button" data-ad-action="${ad.status === "active" ? "deactivate" : "activate"}" data-ad-id="${escapeAttribute(ad.id)}">${ad.status === "active" ? "Desativar" : "Ativar"}</button>
+        <button class="button button-secondary" type="button" data-ad-action="duplicate" data-ad-id="${escapeAttribute(ad.id)}">Duplicar</button>
+        <button class="button button-secondary" type="button" data-ad-action="preview" data-ad-id="${escapeAttribute(ad.id)}">Pre-visualizar</button>
+        <button class="button button-secondary" type="button" data-ad-action="delete" data-ad-id="${escapeAttribute(ad.id)}">Excluir</button>
+      </div>
+    </article>
+  `;
+}
+
+function bindAdMapActions(root, ads) {
+  root.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-map-ad]");
+    const close = event.target.closest("[data-close-map]");
+    const copy = event.target.closest("[data-copy-address]");
+
+    if (button) {
+      const ad = ads.find((item) => item.id === button.dataset.mapAd);
+      if (!ad) return;
+      root.insertAdjacentHTML("beforeend", openMapMenu(ad));
+    }
+
+    if (close) {
+      close.closest("[data-map-modal]")?.remove();
+    }
+
+    if (copy) {
+      await navigator.clipboard?.writeText(copy.dataset.copyAddress || "");
+      showToast("Endereco copiado");
+    }
+  });
+}
+
+function toDateTimeLocal(value) {
+  if (!value) return "";
+  return new Date(value).toISOString().slice(0, 16);
 }
 
 function renderGroupedStickerSections(items, sections, cardRenderer, variant, progressItems = items) {

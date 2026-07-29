@@ -40,7 +40,7 @@
 }
 
 .sticker-card.is-owned {
-  --status-color: var(--color-primary);
+  --status-color: var(--color-success);
 }
 
 .sticker-card.is-missing {

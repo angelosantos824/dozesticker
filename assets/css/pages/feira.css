@@ -1,12 +1,16 @@
 body {
   min-height: 100vh;
-  background: #07140f;
+  background: var(--color-bg);
 }
 
 .fair-page {
   width: min(100%, 46rem);
   margin: 0 auto;
-  padding: var(--space-3) var(--space-3) var(--space-5);
+  padding:
+    max(var(--space-3), env(safe-area-inset-top))
+    max(var(--space-3), env(safe-area-inset-right))
+    max(var(--space-5), env(safe-area-inset-bottom))
+    max(var(--space-3), env(safe-area-inset-left));
 }
 
 .eyebrow {
@@ -43,6 +47,10 @@ body {
   gap: var(--space-2);
 }
 
+.fair-back-button {
+  min-height: 2.75rem;
+}
+
 .sync-status {
   display: inline-flex;
   align-items: center;
@@ -59,7 +67,7 @@ body {
 }
 
 .connection-dot.is-online {
-  background: var(--color-primary);
+  background: var(--color-success);
 }
 
 .connection-dot.is-offline {
@@ -100,7 +108,7 @@ body {
   z-index: 5;
   margin-bottom: var(--space-2);
   padding: var(--space-2) 0;
-  background: #07140f;
+  background: var(--color-bg);
 }
 
 .fair-search .field {
@@ -124,7 +132,7 @@ body {
 
 .recent-search {
   flex: 0 0 auto;
-  min-height: 2.1rem;
+  min-height: 2.75rem;
   border: 1px solid var(--color-border);
   border-radius: 999px;
   background: rgba(248, 250, 252, 0.06);
@@ -170,6 +178,7 @@ body {
   padding: var(--space-3);
   text-align: left;
   transition: opacity 160ms ease, transform 160ms ease;
+  touch-action: manipulation;
 }
 
 .fair-item.is-leaving {
@@ -209,7 +218,7 @@ body {
 
 .fair-action {
   border-radius: 999px;
-  background: var(--color-primary);
+  background: var(--color-success);
   color: #042015;
   padding: 0.55rem 0.7rem;
   font-size: 0.82rem;
@@ -220,7 +229,6 @@ body {
   padding-top: var(--space-2);
 }
 
-.fair-fullscreen .fair-topline,
 .fair-fullscreen .fair-secondary {
   display: none;
 }
@@ -231,7 +239,7 @@ body {
 
 @media (max-width: 430px) {
   .fair-page {
-    padding-inline: var(--space-2);
+    padding-inline: max(var(--space-2), env(safe-area-inset-left)) max(var(--space-2), env(safe-area-inset-right));
   }
 
   .fair-topline {
@@ -243,13 +251,34 @@ body {
     align-items: end;
   }
 
+  .fair-back-button,
+  .fair-mode-button {
+    width: 100%;
+  }
+
   .fair-item {
     grid-template-columns: 4.3rem minmax(0, 1fr);
+    gap: var(--space-2);
   }
 
   .fair-action {
     grid-column: 1 / -1;
+    min-height: 2.75rem;
     text-align: center;
+  }
+}
+
+@media (max-width: 360px) {
+  .fair-header h1 {
+    font-size: 1.4rem;
+  }
+
+  .sync-status {
+    max-width: 9.5rem;
+  }
+
+  .fair-code {
+    font-size: 0.85rem;
   }
 }
 
