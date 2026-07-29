@@ -137,8 +137,11 @@
 }
 
 .album-grid .sticker-section-grid {
-  grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
   gap: var(--space-3);
+}
+
+.album-grid .sticker-section-grid > * {
+  flex-basis: clamp(9.5rem, 15vw, 11.5rem);
 }
 
 .album-sticker {
@@ -265,7 +268,7 @@
   }
 
   .album-grid .sticker-section-grid {
-    grid-template-columns: 1fr;
+    padding-bottom: var(--space-3);
   }
 }
 
@@ -319,7 +322,10 @@
 
   .album-grid .sticker-section-grid {
     gap: var(--space-2);
-    grid-template-columns: 1fr;
+  }
+
+  .album-grid .sticker-section-grid > * {
+    flex-basis: clamp(8.8rem, 43vw, 10rem);
   }
 
   .album-sticker {
@@ -347,8 +353,8 @@
 }
 
 @media (max-width: 360px) {
-  .album-grid .sticker-section-grid {
-    grid-template-columns: 1fr;
+  .album-grid .sticker-section-grid > * {
+    flex-basis: 8.8rem;
   }
 
   .album-sticker-code,
@@ -359,9 +365,8 @@
 }
 
 @media (max-height: 520px) and (orientation: landscape) and (max-width: 940px) {
-  .album-grid .sticker-section-grid {
-    grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
-    gap: var(--space-2);
+  .album-grid .sticker-section-grid > * {
+    flex-basis: 8rem;
   }
 
   .album-sticker {
