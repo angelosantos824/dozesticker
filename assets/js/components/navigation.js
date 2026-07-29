@@ -5,6 +5,7 @@ const privateItems = [
   { id: "album", label: "Album", href: "album.html", icon: "AL", mobile: true },
   { id: "feira", label: "Feira", href: "feira.html", icon: "FR", mobile: true },
   { id: "perfil", label: "Perfil", href: "perfil.html", icon: "PF", mobile: true },
+  { id: "admin-anuncios", label: "Anuncios", href: "admin-anuncios.html", icon: "AD", admin: true },
   { id: "sair", label: "Sair", href: "#", icon: "SA", mobile: true, action: "signout" }
 ];
 
@@ -19,13 +20,15 @@ export async function renderNavigation(currentPage) {
   if (!sidebar && !mobileNav) return;
 
   const session = await getSession().catch(() => null);
-  const navItems = session ? privateItems : publicItems;
+  const navItems = session
+    ? privateItems.filter((item) => !item.admin || isPlatformAdminSession(session))
+    : publicItems;
 
   if (sidebar) {
     sidebar.innerHTML = `
       <a class="brand" href="${session ? "dashboard.html" : "index.html"}" aria-label="DOZESTICKER">
-        <span class="brand-mark">12</span>
-        <span>DOZESTICKER</span>
+        <img src="assets/images/brand/dozedev-symbol.png" alt="" width="38" height="38">
+        <span>DOZESTICKER <small>by DOZEDEV</small></span>
       </a>
       <nav class="nav-list" aria-label="Navegacao principal">
         ${navItems.map((item) => navLink(item, currentPage, "nav-link")).join("")}
@@ -34,7 +37,7 @@ export async function renderNavigation(currentPage) {
   }
 
   if (mobileNav) {
-    mobileNav.innerHTML = navItems.map((item) => navLink(item, currentPage, "mobile-nav-link")).join("");
+    mobileNav.innerHTML = navItems.filter((item) => item.mobile).map((item) => navLink(item, currentPage, "mobile-nav-link")).join("");
   }
 
   document.querySelectorAll("[data-nav-action='signout']").forEach((button) => {
@@ -44,6 +47,13 @@ export async function renderNavigation(currentPage) {
       window.location.href = "login.html";
     });
   });
+}
+
+function isPlatformAdminSession(session) {
+  const role = session?.user?.app_metadata?.role;
+  const roles = session?.user?.app_metadata?.roles || [];
+  return ["admin", "super_admin", "platform_admin"].includes(role)
+    || roles.some((item) => ["admin", "super_admin", "platform_admin"].includes(item));
 }
 
 function navLink(item, currentPage, className) {

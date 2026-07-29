@@ -1,4 +1,4 @@
-const cacheName = "dozesticker-v0.5.2-selecoes";
+const cacheName = "dozesticker-v0.6.0-branding-ads";
 const appShell = [
   "./",
   "./index.html",
@@ -17,6 +17,7 @@ const appShell = [
   "./pacotes.html",
   "./trocas.html",
   "./configuracoes.html",
+  "./admin-anuncios.html",
   "./manifest.webmanifest",
   "./assets/css/variables.css",
   "./assets/css/reset.css",
@@ -40,10 +41,15 @@ const appShell = [
   "./assets/js/components/SearchBar.js",
   "./assets/js/components/SectionHeader.js",
   "./assets/js/components/StickerCard.js",
+  "./assets/js/components/AdCard.js",
   "./assets/js/services/auth.service.js",
   "./assets/js/services/collection.service.js",
+  "./assets/js/services/ads.service.js",
   "./assets/js/services/supabase-client.js",
-  "./assets/images/logo/icon.svg"
+  "./assets/images/logo/icon.png",
+  "./assets/images/brand/dozedev-symbol.png",
+  "./assets/images/brand/dozedev-logo-full.png",
+  "./assets/images/brand/stadium-full.png"
 ];
 
 self.addEventListener("install", (event) => {

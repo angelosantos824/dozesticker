@@ -1,4 +1,4 @@
-import { OPERATIONAL_CATALOG_TOTAL, createFallbackWorldCupCatalog } from "../assets/js/data/world-cup-2026.catalog.js";
+import { OPERATIONAL_CATALOG_TOTAL, SECTION_ORDER_MAP, createFallbackWorldCupCatalog } from "../assets/js/data/world-cup-2026.catalog.js";
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -39,7 +39,7 @@ async function main() {
     album_id: album.id,
     slug: section.slug,
     name: section.name,
-    display_order: section.display_order,
+    display_order: getSectionDisplayOrder(section),
     status: "active"
   }));
   const sections = await upsertMany("sections", "album_id,slug", sectionRows);
@@ -78,6 +78,11 @@ async function main() {
   if (stickers.length !== OPERATIONAL_CATALOG_TOTAL || counts.stickers < OPERATIONAL_CATALOG_TOTAL) {
     throw new Error(`Seed incompleto: esperadas ${OPERATIONAL_CATALOG_TOTAL} figurinhas.`);
   }
+}
+
+function getSectionDisplayOrder(section) {
+  const code = String(section.team_code || section.code || section.group_code || section.slug || "").toUpperCase();
+  return SECTION_ORDER_MAP.get(code) || Number(section.display_order ?? 999);
 }
 
 function validateLocalCatalog() {

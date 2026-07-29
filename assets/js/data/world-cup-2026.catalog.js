@@ -49,6 +49,64 @@ export const WORLD_CUP_2026_TEAMS = [
   { groupCode: "L", name: "Panama", teamCode: "PAN", displayOrder: 48 }
 ];
 
+export const SECTION_ORDER = [
+  "INTRO",
+  "FWC",
+  "MEX",
+  "RSA",
+  "KOR",
+  "CZE",
+  "CAN",
+  "RUS",
+  "QAT",
+  "SUI",
+  "BRA",
+  "MAR",
+  "HAI",
+  "SCO",
+  "USA",
+  "PAR",
+  "AUS",
+  "TUR",
+  "GER",
+  "CUW",
+  "CIV",
+  "ECU",
+  "NED",
+  "JPN",
+  "SWE",
+  "TUN",
+  "BEL",
+  "EGY",
+  "IRN",
+  "NZL",
+  "ESP",
+  "CPV",
+  "KSA",
+  "URU",
+  "FRA",
+  "SEN",
+  "IRQ",
+  "NOR",
+  "ARG",
+  "ALG",
+  "AUT",
+  "JOR",
+  "POR",
+  "COD",
+  "UZB",
+  "COL",
+  "ENG",
+  "CRO",
+  "GHA",
+  "PAN",
+  "CC"
+];
+
+export const SECTION_ORDER_MAP = new Map(
+  SECTION_ORDER.map((code, index) => [code, index + 1])
+);
+
 export const OPERATIONAL_CATALOG_TOTAL = 992;
 export const TEAM_STICKERS_PER_TEAM = 20;
 export const FWC_STICKER_COUNT = 19;
@@ -136,7 +194,7 @@ export function createFallbackWorldCupCatalog() {
         team_code: team.teamCode,
         group_code: groupCode,
         kind: "team",
-        display_order: groupOrder + teamIndex + 1
+        display_order: SECTION_ORDER_MAP.get(team.teamCode) || groupOrder + teamIndex + 1
       }));
 
     return [
@@ -145,7 +203,7 @@ export function createFallbackWorldCupCatalog() {
     ];
   });
   const finalSections = [
-    { id: "cc", album_id: "world-cup-2026", slug: "cc", code: "CC", name: "CC", group_code: "CC", kind: "special", display_order: 200 }
+    { id: "cc", album_id: "world-cup-2026", slug: "cc", code: "CC", name: "CC", group_code: "CC", kind: "special", display_order: SECTION_ORDER_MAP.get("CC") || 200 }
   ];
   const specialStickers = [
     createSpecialSticker("intro-00", "INTRO00", 0, "INTRO - Figurinha 00", "intro", "poster", 0, false, true),

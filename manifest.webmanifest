@@ -5,13 +5,13 @@
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#07140f",
-  "theme_color": "#07140f",
+  "background_color": "#07050d",
+  "theme_color": "#07050d",
   "icons": [
     {
-      "src": "assets/images/logo/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "assets/images/logo/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]
