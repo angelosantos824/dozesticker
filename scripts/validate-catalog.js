@@ -30,6 +30,10 @@ async function main() {
   const missingTeamNumbers = findMissingTeamNumbers(WORLD_CUP_2026_TEAMS, teamStickers);
   const epicCount = stickers.filter((sticker) => hasMarker(sticker, "epic") || hasMarker(sticker, "silver")).length;
   const legendaryCount = stickers.filter((sticker) => hasMarker(sticker, "legendary") || hasMarker(sticker, "gold")).length;
+  const russiaEntries = WORLD_CUP_2026_TEAMS.filter((team) => team.teamCode === "RUS" || normalize(team.name) === "russia");
+  const bosniaEntries = WORLD_CUP_2026_TEAMS.filter((team) => team.teamCode === "BIH" && normalize(team.name) === "bosnia");
+  const teamTypeErrors = findTeamTypeErrors(WORLD_CUP_2026_TEAMS, teamStickers);
+  const rareRuleErrors = findRareRuleErrors(stickers);
 
   const result = {
     total: stickers.length,
@@ -44,7 +48,11 @@ async function main() {
     legendaryCount,
     duplicateCodes,
     missingTeamNumbers,
-    nonOperationalCount: stickers.filter((sticker) => !isOperationalSticker(sticker)).length
+    nonOperationalCount: stickers.filter((sticker) => !isOperationalSticker(sticker)).length,
+    russiaEntries,
+    bosniaEntries,
+    teamTypeErrors,
+    rareRuleErrors
   };
 
   const failures = [
@@ -59,7 +67,11 @@ async function main() {
     result.epicCount === 0 ? "" : `Epic Silver encontradas ${result.epicCount}.`,
     result.legendaryCount === 0 ? "" : `Legendary Gold encontradas ${result.legendaryCount}.`,
     result.duplicateCodes.length === 0 ? "" : `Codigos duplicados: ${result.duplicateCodes.join(", ")}.`,
-    result.nonOperationalCount === 0 ? "" : `Itens nao operacionais encontrados ${result.nonOperationalCount}.`
+    result.nonOperationalCount === 0 ? "" : `Itens nao operacionais encontrados ${result.nonOperationalCount}.`,
+    result.russiaEntries.length === 0 ? "" : "Russia/RUS ainda existe no catalogo.",
+    result.bosniaEntries.length === 1 ? "" : "Bosnia/BIH nao encontrada corretamente.",
+    result.teamTypeErrors.length === 0 ? "" : `Tipos de selecao incorretos: ${result.teamTypeErrors.join(", ")}.`,
+    result.rareRuleErrors.length === 0 ? "" : `Raridade incorreta: ${result.rareRuleErrors.join(", ")}.`
   ].filter(Boolean);
 
   printReport(result);
@@ -86,6 +98,9 @@ function printReport(result) {
   console.log(`Legendary Gold: ${result.legendaryCount}`);
   console.log(`Codigos duplicados: ${result.duplicateCodes.length}`);
   console.log(`Sequencias incompletas: ${result.missingTeamNumbers.length}`);
+  console.log(`Bosnia/BIH: ${result.bosniaEntries.length === 1 ? "OK" : "Falha"}`);
+  console.log(`Tipos especiais por selecao: ${result.teamTypeErrors.length === 0 ? "OK" : "Falha"}`);
+  console.log(`Estrelas raras: ${result.rareRuleErrors.length === 0 ? "OK" : "Falha"}`);
   console.log("");
   console.log("Resultado: OK");
 }
@@ -127,6 +142,41 @@ function findMissingTeamNumbers(teams, stickers) {
   });
 
   return missing;
+}
+
+function findTeamTypeErrors(teams, stickers) {
+  const expectedTypes = new Map([
+    [1, "badge"],
+    [2, "goalkeeper"],
+    [13, "team_photo"]
+  ]);
+  const errors = [];
+
+  teams.forEach((team) => {
+    expectedTypes.forEach((expectedType, number) => {
+      const sticker = stickers.find((item) => item.code === `${team.teamCode}${number}`);
+      if (!sticker || sticker.type !== expectedType) {
+        errors.push(`${team.teamCode}${number}`);
+      }
+    });
+  });
+
+  return errors;
+}
+
+function findRareRuleErrors(stickers) {
+  return stickers
+    .filter((sticker) => {
+      const code = String(sticker.code || "");
+      const rare = Boolean(sticker.is_rare || sticker.isRare);
+      const stickerNumber = Number(sticker.player_number || sticker.playerNumber || sticker.number);
+      const isTeamSticker = Boolean(sticker.team_code || sticker.teamCode);
+      const shouldBeRare = code === "INTRO00"
+        || /^FWC([1-9]|1[0-9])$/.test(code)
+        || (isTeamSticker && (stickerNumber === 1 || stickerNumber === 13));
+      return shouldBeRare && !rare;
+    })
+    .map((sticker) => sticker.code);
 }
 
 function hasMarker(sticker, marker) {

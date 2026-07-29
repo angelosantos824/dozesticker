@@ -4,7 +4,7 @@ export const WORLD_CUP_2026_TEAMS = [
   { groupCode: "A", name: "Coreia do Sul", teamCode: "KOR", displayOrder: 3 },
   { groupCode: "A", name: "Republica Tcheca", teamCode: "CZE", displayOrder: 4 },
   { groupCode: "B", name: "Canada", teamCode: "CAN", displayOrder: 5 },
-  { groupCode: "B", name: "Russia", teamCode: "RUS", displayOrder: 6 },
+  { groupCode: "B", name: "Bosnia", teamCode: "BIH", displayOrder: 6 },
   { groupCode: "B", name: "Catar", teamCode: "QAT", displayOrder: 7 },
   { groupCode: "B", name: "Suica", teamCode: "SUI", displayOrder: 8 },
   { groupCode: "C", name: "Brasil", teamCode: "BRA", displayOrder: 9 },
@@ -57,7 +57,7 @@ export const SECTION_ORDER = [
   "KOR",
   "CZE",
   "CAN",
-  "RUS",
+  "BIH",
   "QAT",
   "SUI",
   "BRA",
@@ -149,7 +149,7 @@ export function createTeamStickers(team) {
       number,
       title: `${team.name} - Figurinha ${number}`,
       subtitle: "",
-      type: "player",
+      type: teamStickerType(number),
       country_code: "",
       team_code: team.teamCode,
       teamCode: team.teamCode,
@@ -173,6 +173,13 @@ export function createTeamStickers(team) {
       rarity: ""
     };
   });
+}
+
+function teamStickerType(number) {
+  if (number === 1) return "badge";
+  if (number === 2) return "goalkeeper";
+  if (number === 13) return "team_photo";
+  return "player";
 }
 
 export function createFallbackWorldCupCatalog() {

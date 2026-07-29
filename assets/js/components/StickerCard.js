@@ -21,6 +21,7 @@ export function StickerCard(sticker) {
 export function typeLabel(type) {
   const labels = {
     player: "Jogador",
+    goalkeeper: "Goleiro",
     team_photo: "Time",
     logo: "Logo",
     badge: "Escudo",

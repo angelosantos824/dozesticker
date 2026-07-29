@@ -3,17 +3,17 @@ import { getSession, signOut } from "../services/auth.service.js";
 const sidebarStateKey = "dozesticker:sidebar-collapsed";
 
 const privateItems = [
-  { id: "dashboard", label: "Dashboard", href: "dashboard.html", icon: "DB", mobile: true },
-  { id: "album", label: "Album", href: "album.html", icon: "AL", mobile: true },
-  { id: "feira", label: "Feira", href: "feira.html", icon: "FR", mobile: true },
-  { id: "perfil", label: "Perfil", href: "perfil.html", icon: "PF", mobile: true },
-  { id: "admin-anuncios", label: "Anuncios", href: "admin-anuncios.html", icon: "AD", admin: true },
-  { id: "sair", label: "Sair", href: "#", icon: "SA", mobile: true, action: "signout" }
+  { id: "dashboard", label: "Dashboard", href: "dashboard.html", mobile: true },
+  { id: "album", label: "Album", href: "album.html", mobile: true },
+  { id: "feira", label: "Feira", href: "feira.html", mobile: true },
+  { id: "perfil", label: "Perfil", href: "perfil.html", mobile: true },
+  { id: "admin-anuncios", label: "Anuncios", href: "admin-anuncios.html", admin: true },
+  { id: "sair", label: "Sair", href: "#", mobile: true, action: "signout" }
 ];
 
 const publicItems = [
-  { id: "login", label: "Entrar", href: "login.html", icon: "EN", mobile: true },
-  { id: "cadastro", label: "Criar conta", href: "cadastro.html", icon: "CC", mobile: true }
+  { id: "login", label: "Entrar", href: "login.html", mobile: true },
+  { id: "cadastro", label: "Criar conta", href: "cadastro.html", mobile: true }
 ];
 
 export async function renderNavigation(currentPage) {
@@ -32,7 +32,7 @@ export async function renderNavigation(currentPage) {
     sidebar.innerHTML = `
       <div class="sidebar-brand-row">
         ${brandLink(session)}
-        <button class="sidebar-toggle" type="button" data-sidebar-toggle aria-label="Ocultar menu lateral">&lt;&lt;&lt;</button>
+        <button class="sidebar-toggle" type="button" data-sidebar-toggle aria-label="Ocultar menu lateral">Ocultar</button>
       </div>
       <nav class="nav-list" aria-label="Navegacao principal">
         ${navItems.map((item) => navLink(item, currentPage, "nav-link")).join("")}
@@ -74,7 +74,6 @@ function navLink(item, currentPage, className) {
   const action = item.action ? ` data-nav-action="${item.action}"` : "";
   return `
     <a class="${className}" href="${item.href}"${current}${action}>
-      <span class="nav-icon" aria-hidden="true">${item.icon}</span>
       <span>${item.label}</span>
     </a>
   `;
@@ -83,7 +82,7 @@ function navLink(item, currentPage, className) {
 function brandLink(session) {
   return `
     <a class="brand" href="${session ? "dashboard.html" : "index.html"}" aria-label="DOZESTICKER">
-      <img src="assets/images/brand/dozedev-symbol.png" alt="" width="38" height="38">
+      <img src="assets/images/logo/icon.png" alt="" width="38" height="38">
       <span>DOZESTICKER <small>by DOZEDEV</small></span>
     </a>
   `;
@@ -99,8 +98,10 @@ function renderCollapsedBrand(session) {
   }
 
   card.innerHTML = `
-    ${brandLink(session)}
-    <button class="sidebar-toggle" type="button" data-sidebar-toggle aria-label="Mostrar menu lateral">&gt;&gt;&gt;</button>
+    <button class="sidebar-toggle collapsed-sidebar-toggle" type="button" data-sidebar-toggle aria-label="Mostrar menu lateral">
+      <img src="assets/images/logo/icon.png" alt="" width="28" height="28">
+      <span>Menu</span>
+    </button>
   `;
 }
 

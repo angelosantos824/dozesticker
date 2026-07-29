@@ -818,6 +818,7 @@ async function renderAlbumPage() {
         <select data-album-type>
           <option value="todos">Todos</option>
           <option value="player">Jogador</option>
+          <option value="goalkeeper">Goleiro</option>
           <option value="team_photo">Time</option>
           <option value="logo">Logo</option>
           <option value="badge">Escudo</option>
@@ -1264,7 +1265,7 @@ const teamFlags = {
   KOR: "🇰🇷",
   CZE: "🇨🇿",
   CAN: "🇨🇦",
-  RUS: "🇷🇺",
+  BIH: "🇧🇦",
   QAT: "🇶🇦",
   SUI: "🇨🇭",
   BRA: "🇧🇷",
