@@ -13,7 +13,9 @@ SECURITY DEFINER
 SET search_path = ''
 AS $$
 BEGIN
-  IF NOT dozesticker.is_platform_admin() THEN
+  IF current_user <> 'postgres'
+    AND NOT dozesticker.is_platform_admin()
+  THEN
     RAISE EXCEPTION 'Acesso administrativo nao autorizado';
   END IF;
 
