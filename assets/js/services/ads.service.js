@@ -3,6 +3,7 @@ import { getSession } from "./auth.service.js";
 import { getSupabaseClient } from "./supabase-client.js";
 
 const adsCacheTtl = 1000 * 60 * 3;
+const adsStorageBucket = "dozesticker-ads";
 let activeAdsCache = null;
 let activeAdsCacheAt = 0;
 
@@ -79,28 +80,73 @@ export async function deleteAd(id) {
 
 export async function uploadAdImage(file) {
   if (!file) return "";
+
   if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
     throw new Error("Use PNG, JPG, JPEG ou WebP.");
   }
+
   if (file.size > 5 * 1024 * 1024) {
-    throw new Error("A imagem deve ter no maximo 5 MB.");
+    throw new Error("A imagem deve ter no máximo 5 MB.");
+  }
+
+  const session = await getSession();
+
+  if (!session?.access_token || !session?.refresh_token) {
+    throw new Error("Sessão expirada. Entre novamente para continuar.");
   }
 
   const supabase = await getSupabaseClient();
-  if (!supabase) throw new Error("Supabase nao configurado.");
 
-  const extension = file.name.split(".").pop()?.toLowerCase() || "webp";
-  const path = `${Date.now()}-${globalThis.crypto?.randomUUID?.() || Math.random().toString(16).slice(2)}.${extension}`;
-  const { error } = await supabase.storage.from("dozesticker-ads").upload(path, file, {
-    cacheControl: "3600",
-    upsert: false
+  if (!supabase) {
+    throw new Error("Supabase não configurado.");
+  }
+
+  const {
+    data: sessionData,
+    error: sessionError
+  } = await supabase.auth.setSession({
+    access_token: session.access_token,
+    refresh_token: session.refresh_token
   });
-  if (error) throw error;
 
-  const { data } = supabase.storage.from("dozesticker-ads").getPublicUrl(path);
+  if (sessionError || !sessionData?.session) {
+    console.error("[ADS STORAGE] Falha ao aplicar sessão:", sessionError);
+    throw new Error("Não foi possível autenticar o envio da imagem.");
+  }
+
+  const userId = sessionData.session.user?.id || session.user?.id || null;
+
+  console.info("[ADS STORAGE] Upload autenticado", {
+    userId,
+    bucket: adsStorageBucket
+  });
+
+  const extension =
+    file.name.split(".").pop()?.toLowerCase() || "webp";
+
+  const filePath =
+    `${Date.now()}-${globalThis.crypto?.randomUUID?.() ||
+      Math.random().toString(16).slice(2)}.${extension}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from(adsStorageBucket)
+    .upload(filePath, file, {
+      cacheControl: "3600",
+      upsert: false,
+      contentType: file.type
+    });
+
+  if (uploadError) {
+    console.error("[ADS STORAGE] Upload rejeitado:", uploadError);
+    throw uploadError;
+  }
+
+  const { data } = supabase.storage
+    .from(adsStorageBucket)
+    .getPublicUrl(filePath);
+
   return data.publicUrl;
 }
-
 export function buildMapLinks(ad) {
   const latitude = ad.latitude;
   const longitude = ad.longitude;
