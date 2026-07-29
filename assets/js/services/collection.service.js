@@ -247,7 +247,7 @@ async function tryLoadRemoteData(userId) {
 
 async function loadRemoteData(userId) {
   const [remoteStickers, userStickers, remoteSections] = await Promise.all([
-    requestSupabase("/stickers?select=id,album_id,section_id,code,number,title,subtitle,page,position,rarity,type,country_code,team_code,group_code,player_name,player_number,display_order,is_special,foil,sections(name)&status=eq.active"),
+    requestSupabase("/stickers?select=id,album_id,section_id,code,number,title,subtitle,page,position,rarity,country_code,team_code,group_code,player_name,player_number,display_order,is_special,foil,sections(name)&status=eq.active"),
     requestSupabase(`/user_stickers?select=sticker_id,has_sticker&user_id=eq.${encodeURIComponent(userId)}`),
     requestSupabase("/sections?select=id,album_id,slug,name,display_order,status&status=eq.active")
   ]);
@@ -285,7 +285,7 @@ function normalizeRemoteSticker(item, sectionsById) {
   return {
     ...item,
     section_name: item.sections?.name || section?.name || "Sem secao",
-    type: item.type || item.rarity || "player",
+    type: deriveStickerType(item),
     team_code: item.team_code || section?.team_code || "",
     teamCode: item.team_code || section?.team_code || "",
     teamName: section?.name || item.sections?.name || "Sem secao",
@@ -300,6 +300,12 @@ function normalizeRemoteSticker(item, sectionsById) {
     foil: Boolean(item.foil),
     hasSticker: false
   };
+}
+
+function deriveStickerType(item) {
+  if (item.is_special) return "special";
+  if (item.rarity === "rare") return "special";
+  return "player";
 }
 
 function enrichRemoteSection(section) {
