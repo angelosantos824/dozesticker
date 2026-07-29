@@ -248,7 +248,7 @@ async function tryLoadRemoteData(userId) {
 
 async function loadRemoteData(userId) {
   const [remoteStickers, userStickers, remoteSections] = await Promise.all([
-    requestSupabase("/stickers?select=id,album_id,section_id,code,number,title,subtitle,page,position,rarity,country_code,team_code,group_code,player_name,player_number,display_order,is_special,foil,sections(name)&status=eq.active"),
+    requestSupabase("/stickers?select=id,album_id,section_id,code,number,title,subtitle,page,position,rarity,is_special,foil,display_order,sections(name)&status=eq.active"),
     requestSupabase(`/user_stickers?select=sticker_id,has_sticker&user_id=eq.${encodeURIComponent(userId)}`),
     requestSupabase("/sections?select=id,album_id,slug,name,display_order,status&status=eq.active")
   ]);
@@ -285,19 +285,21 @@ function normalizeRemoteSticker(item, sectionsById) {
 
   return {
     ...item,
-    section_name: item.sections?.name || section?.name || "Sem secao",
+    section_name: item.sections?.name || section?.name || "Sem seção",
     type: deriveStickerType(item),
-    team_code: item.team_code || section?.team_code || "",
-    teamCode: item.team_code || section?.team_code || "",
-    teamName: section?.name || item.sections?.name || "Sem secao",
-    group_code: item.group_code || section?.group_code || "",
-    groupCode: item.group_code || section?.group_code || "",
-    playerName: item.player_name || item.title || "",
-    playerNumber: item.player_number || null,
+    team_code: section?.team_code || "",
+    teamCode: section?.team_code || "",
+    teamName: section?.name || item.sections?.name || "Sem seção",
+    group_code: section?.group_code || "",
+    groupCode: section?.group_code || "",
+    player_name: item.title || "",
+    playerName: item.title || "",
+    player_number: null,
+    playerNumber: null,
     displayOrder: item.display_order || item.number || 0,
     isSpecial: Boolean(item.is_special),
-    is_rare: Boolean(item.rarity === "rare"),
-    isRare: Boolean(item.rarity === "rare"),
+    is_rare: item.rarity === "rare",
+    isRare: item.rarity === "rare",
     foil: Boolean(item.foil),
     hasSticker: false
   };
