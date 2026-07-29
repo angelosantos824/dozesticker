@@ -78,6 +78,12 @@ export async function toggleSticker(stickerId, nextValue) {
   const owned = getLocalOwnership(userId);
   const hasSticker = typeof nextValue === "boolean" ? nextValue : !Boolean(owned[stickerId]);
 
+  console.log("[SYNC] clique", {
+    stickerId,
+    userId,
+    hasSticker
+  });
+
   owned[stickerId] = hasSticker;
   writeStorage(getOwnershipKey(userId), owned);
 
@@ -149,7 +155,10 @@ export function addRecentSearch(query) {
 }
 
 export async function syncPendingChanges() {
-  if (syncPromise) return syncPromise;
+  if (syncPromise) {
+    console.log("[SYNC] sincronização cancelada", "sincronização já em andamento");
+    return syncPromise;
+  }
 
   syncPromise = runSyncPendingChanges()
     .finally(() => {
@@ -378,11 +387,15 @@ function enqueueLocalRecoveryChanges(userId, validStickerIds, localOwnership, re
 
 async function runSyncPendingChanges() {
   if (!navigator.onLine || !isSupabaseConfigured()) {
+    console.log("[SYNC] sincronização cancelada", !navigator.onLine ? "navegador offline" : "Supabase não configurado");
     return getConnectionState();
   }
 
   const userId = await getCollectionUserId();
-  if (!userId || userId === anonymousUserId) return getConnectionState();
+  if (!userId || userId === anonymousUserId) {
+    console.log("[SYNC] sincronização cancelada", "usuário não autenticado");
+    return getConnectionState();
+  }
 
   const validStickerIds = catalogCache ? getValidStickerIds(catalogCache) : new Set();
   const aliasMap = catalogCache ? createStickerAliasMap(catalogCache) : new Map();
@@ -397,6 +410,7 @@ async function runSyncPendingChanges() {
 
     const remoteStickerId = resolveStickerId(change.stickerId, validStickerIds, aliasMap);
     if (!remoteStickerId || !isUuid(remoteStickerId)) {
+      console.log("[SYNC] sincronização cancelada", `stickerId inválido para sync: ${change.stickerId}`);
       remaining.push({ ...change, attempts: Number(change.attempts || 0) + 1 });
       continue;
     }
@@ -415,6 +429,12 @@ async function runSyncPendingChanges() {
 
 async function persistChange(userId, stickerId, hasSticker) {
   if (!navigator.onLine || !isSupabaseConfigured() || !isUuid(stickerId)) {
+    const motivo = !navigator.onLine
+      ? "navegador offline"
+      : !isSupabaseConfigured()
+        ? "Supabase não configurado"
+        : `stickerId não é UUID: ${stickerId}`;
+    console.log("[SYNC] sincronização cancelada", motivo);
     enqueueChange(createQueueChange(userId, stickerId, hasSticker));
     return;
   }
@@ -430,20 +450,39 @@ async function persistChange(userId, stickerId, hasSticker) {
 
 async function upsertRemoteOwnership(userId, stickerId, hasSticker) {
   if (!isUuid(stickerId)) {
+    console.log("[SYNC] sincronização cancelada", `sticker_id precisa ser UUID: ${stickerId}`);
     throw new Error(`sticker_id precisa ser UUID. Valor recebido: ${stickerId}`);
   }
 
-  await requestSupabase("/user_stickers?on_conflict=user_id,sticker_id", {
-    method: "POST",
-    headers: {
-      Prefer: "resolution=merge-duplicates,return=representation"
-    },
-    body: JSON.stringify({
-      user_id: userId,
-      sticker_id: stickerId,
-      has_sticker: Boolean(hasSticker)
-    })
-  });
+  const payload = {
+    user_id: userId,
+    sticker_id: stickerId,
+    has_sticker: Boolean(hasSticker)
+  };
+
+  console.log("[SYNC] enviando", payload);
+
+  try {
+    const data = await requestSupabase("/user_stickers?on_conflict=user_id,sticker_id", {
+      method: "POST",
+      headers: {
+        Prefer: "resolution=merge-duplicates,return=representation"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    console.log("[SYNC] resposta", {
+      data,
+      error: null
+    });
+    return data;
+  } catch (error) {
+    console.log("[SYNC] resposta", {
+      data: null,
+      error
+    });
+    throw error;
+  }
 }
 
 function createQueueChange(userId, stickerId, hasSticker) {
