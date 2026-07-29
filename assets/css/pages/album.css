@@ -255,43 +255,6 @@
   }
 }
 
-@media (max-width: 768px) {
-  .album-page,
-  .album-content,
-  .album-grid,
-  .sticker-section {
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-  }
-
-  .album-page {
-    padding-bottom: calc(6rem + env(safe-area-inset-bottom));
-  }
-
-}
-
-@media (max-width: 560px) {
-  .album-overview {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .album-filters {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .album-section-header {
-    grid-template-columns: 1fr;
-    padding: var(--space-4);
-  }
-
-  .section-progress {
-    justify-items: start;
-  }
-
-}
-
 @media (max-width: 480px) {
   .album-page {
     gap: var(--space-3);
@@ -357,110 +320,6 @@
   }
 }
 
-@media (max-height: 520px) and (orientation: landscape) and (max-width: 940px) {
-  .album-sticker {
-    min-height: 8rem;
-    padding: var(--space-2);
-  }
-
-  .album-sticker-frame {
-    min-height: 4.2rem;
-  }
-
-  .album-sticker h3 {
-    font-size: 0.82rem;
-  }
-
-  .album-sticker p {
-    display: none;
-  }
-}
-
-@media screen and (max-width: 768px) {
-  .album-grid,
-  .sticker-section-stack,
-  .sticker-section {
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    box-sizing: border-box;
-  }
-
-  .sticker-section-grid {
-    display: flex;
-    flex-flow: row wrap;
-    align-items: stretch;
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    gap: 0.625rem;
-    overflow: visible;
-    box-sizing: border-box;
-  }
-
-  .sticker-section-grid > .album-sticker {
-    flex: 0 0 calc((100% - 0.625rem) / 2);
-    width: calc((100% - 0.625rem) / 2);
-    max-width: calc((100% - 0.625rem) / 2);
-    min-width: 0;
-    margin: 0;
-    box-sizing: border-box;
-  }
-
-  .album-sticker {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-    min-height: 0;
-    padding: 0.45rem;
-    border-radius: 0.65rem;
-  }
-
-  .album-sticker-frame {
-    flex: 0 0 auto;
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    height: auto;
-    min-height: 0;
-    aspect-ratio: 4 / 3;
-  }
-
-  .album-sticker-body {
-    flex: 1 1 auto;
-    min-width: 0;
-  }
-
-  .album-sticker-code {
-    font-size: 0.72rem;
-    line-height: 1.1;
-  }
-
-  .album-sticker h3 {
-    display: -webkit-box;
-    margin: 0;
-    overflow: hidden;
-    font-size: 0.78rem;
-    line-height: 1.15;
-    overflow-wrap: anywhere;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-  }
-
-  .album-sticker p {
-    display: none;
-  }
-
-  .album-sticker-state {
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    min-height: 40px;
-    padding: 0.45rem 0.2rem;
-    font-size: 0.75rem;
-  }
-}
-
 @media screen and (max-width: 319px) {
   .sticker-section-grid > .album-sticker {
     flex-basis: 100%;
@@ -469,35 +328,45 @@
   }
 }
 
-/* CORREÇÃO FINAL — 2 FIGURINHAS COMPACTAS NO TELEMÓVEL */
-@media screen and (min-width: 320px) and (max-width: 768px) {
+/* CELULAR DEITADO */
+@media screen and (min-width: 769px) and (max-width: 940px) and (orientation: landscape) {
+  .album-workspace {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .album-content,
+  .album-grid,
+  .sticker-section,
+  .sticker-section-stack {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
   .album-grid .sticker-section-grid,
   .sticker-section-grid {
     display: flex !important;
     flex-flow: row wrap !important;
     align-items: stretch !important;
-    justify-content: flex-start !important;
-
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
-
-    gap: 8px !important;
+    gap: 10px !important;
     box-sizing: border-box !important;
   }
 
   .album-grid .sticker-section-grid > .album-sticker,
   .sticker-section-grid > .album-sticker {
-    flex: 0 0 calc(50% - 4px) !important;
-    width: calc(50% - 4px) !important;
-    max-width: calc(50% - 4px) !important;
+    flex: 0 0 calc((100% - 20px) / 3) !important;
+    width: calc((100% - 20px) / 3) !important;
+    max-width: calc((100% - 20px) / 3) !important;
     min-width: 0 !important;
-
-    margin: 0 !important;
-    padding: 6px !important;
-    gap: 5px !important;
     min-height: 0 !important;
-
+    margin: 0 !important;
+    padding: 7px !important;
+    gap: 5px !important;
     box-sizing: border-box !important;
   }
 
@@ -505,9 +374,7 @@
     width: 100% !important;
     height: auto !important;
     min-height: 0 !important;
-
-    /* Quanto menor o segundo número, menor será a altura */
-    aspect-ratio: 1 / 0.62 !important;
+    aspect-ratio: 4 / 3 !important;
   }
 
   .album-sticker-body {
@@ -517,16 +384,15 @@
 
   .album-sticker-code {
     font-size: 11px !important;
-    line-height: 1 !important;
+    line-height: 1.1 !important;
   }
 
   .album-sticker h3 {
     margin: 0 !important;
     font-size: 12px !important;
-    line-height: 1.1 !important;
-
-    display: -webkit-box !important;
+    line-height: 1.15 !important;
     overflow: hidden !important;
+    display: -webkit-box !important;
     -webkit-box-orient: vertical !important;
     -webkit-line-clamp: 2 !important;
   }
@@ -537,11 +403,106 @@
 
   .album-sticker-state {
     width: 100% !important;
-    min-width: 0 !important;
-    min-height: 36px !important;
-
-    padding: 5px 2px !important;
+    min-height: 34px !important;
+    padding: 4px 2px !important;
     font-size: 11px !important;
+  }
+}
+
+/* MOBILE EM PÉ — CORREÇÃO DEFINITIVA */
+@media screen and (max-width: 768px) and (orientation: portrait) {
+  html,
+  body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .album-page,
+  .album-workspace,
+  .album-content,
+  .album-grid,
+  .sticker-section-stack,
+  .sticker-section,
+  .sticker-section-grid {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .album-workspace {
+    display: block !important;
+  }
+
+  .sticker-section-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    overflow: hidden !important;
+  }
+
+  .sticker-section-grid > .album-sticker {
+    grid-column: auto !important;
+    grid-row: auto !important;
+
+    flex: none !important;
+    width: auto !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    margin: 0 !important;
+    padding: 5px !important;
+    gap: 4px !important;
+    min-height: 0 !important;
+
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+
+  .album-sticker-frame {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    aspect-ratio: 4 / 3 !important;
+  }
+
+  .album-sticker-body {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    gap: 2px !important;
+    overflow: hidden !important;
+  }
+
+  .album-sticker-code {
+    font-size: 10px !important;
+    line-height: 1.1 !important;
+  }
+
+  .album-sticker h3 {
+    display: -webkit-box !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    font-size: 11px !important;
+    line-height: 1.1 !important;
+    overflow-wrap: anywhere !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
+  }
+
+  .album-sticker p {
+    display: none !important;
+  }
+
+  .album-sticker-state {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    min-height: 32px !important;
+    padding: 4px 2px !important;
+    font-size: 10px !important;
     line-height: 1 !important;
   }
 }
