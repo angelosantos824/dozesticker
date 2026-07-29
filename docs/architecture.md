@@ -131,3 +131,10 @@ Complemento da Sprint 05:
 - FWC e INTRO sao especiais/raras; as posicoes 1 e 13 de todas as selecoes sao raras e exibem estrela no card.
 - `collection.service.js` usa a regra de compatibilidade futura: catalogo remoto com registros substitui o fallback local; caso contrario, o fallback permanece ativo.
 - Pesquisa e filtros continuam em memoria depois do primeiro carregamento.
+
+Complemento da Sprint 05.2:
+
+- Colecao, Feira, Modo Troca e Album usam agrupamento visual por secao/selecao.
+- A ordenacao dos grupos vem de `sections.display_order`; a ordenacao interna das figurinhas vem de `display_order` e `number`.
+- O agrupamento e montado em memoria a partir do catalogo ja carregado, sem chamadas repetidas ao Supabase por selecao.
+- Cada grupo exibe quantidade obtida, percentual e barra de progresso propria.

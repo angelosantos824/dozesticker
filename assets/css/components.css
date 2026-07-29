@@ -127,6 +127,149 @@
   background: linear-gradient(90deg, var(--color-primary), var(--color-blue));
 }
 
+.sticker-section-nav {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  margin-bottom: var(--space-4);
+  padding: var(--space-2) 0;
+  background: rgba(7, 20, 15, 0.96);
+  scrollbar-width: thin;
+}
+
+.sticker-section-nav-item {
+  display: inline-flex;
+  flex: 0 0 auto;
+  min-height: 2.35rem;
+  align-items: center;
+  gap: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: rgba(248, 250, 252, 0.06);
+  color: var(--color-white);
+  padding: 0 var(--space-3);
+  font-weight: 900;
+}
+
+.sticker-section-stack {
+  display: grid;
+  gap: var(--space-8);
+}
+
+.sticker-section {
+  scroll-margin-top: 6rem;
+}
+
+.sticker-section-header {
+  position: sticky;
+  top: var(--space-2);
+  z-index: 4;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(8rem, 12rem);
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(7, 20, 15, 0.94);
+  padding: var(--space-3) 0;
+  backdrop-filter: blur(14px);
+}
+
+.sticker-section-title {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.sticker-section-flag {
+  display: grid;
+  width: 2.6rem;
+  height: 2.6rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: rgba(248, 250, 252, 0.06);
+  font-size: 1.35rem;
+  font-weight: 900;
+}
+
+.sticker-section-header h2,
+.sticker-section-header p {
+  margin: 0;
+}
+
+.sticker-section-header h2 {
+  overflow-wrap: anywhere;
+  font-size: 1.35rem;
+}
+
+.sticker-section-header p {
+  color: var(--color-muted);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.sticker-section-progress {
+  display: grid;
+  gap: var(--space-2);
+  text-align: right;
+}
+
+.sticker-section-progress strong {
+  color: var(--color-primary-soft);
+  font-size: 1.05rem;
+}
+
+.sticker-section-progress .progress-track {
+  height: 0.45rem;
+}
+
+.sticker-section-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13.5rem, 1fr));
+  gap: var(--space-4);
+}
+
+.sticker-section-list {
+  display: grid;
+  gap: var(--space-3);
+}
+
+@media (max-width: 560px) {
+  .sticker-section-stack {
+    gap: var(--space-5);
+  }
+
+  .sticker-section-header {
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+    padding: var(--space-2) 0;
+  }
+
+  .sticker-section-progress {
+    text-align: left;
+  }
+
+  .sticker-section-header h2 {
+    font-size: 1.05rem;
+  }
+
+  .sticker-section-flag {
+    width: 2.25rem;
+    height: 2.25rem;
+    font-size: 1.12rem;
+  }
+
+  .sticker-section-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .badge {
   display: inline-flex;
   align-items: center;

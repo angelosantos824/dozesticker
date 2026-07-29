@@ -178,21 +178,30 @@ async function ensureCatalog() {
 
   activeUserId = userId;
 
-  if (isSupabaseConfigured()) {
-    try {
-      const remoteCatalog = await loadRemoteCatalog(userId);
-      catalogCache = remoteCatalog?.length === OPERATIONAL_CATALOG_TOTAL
+  if (if (isSupabaseConfigured()) {
+  try {
+    const remoteCatalog = await loadRemoteCatalog(userId);
+
+    catalogCache =
+      remoteCatalog?.length === OPERATIONAL_CATALOG_TOTAL
         ? remoteCatalog
         : createLocalCatalog(userId);
-      return catalogCache;
-    } catch {
-      catalogCache = createLocalCatalog(userId);
-      return catalogCache;
-    }
-  }
 
-  catalogCache = createLocalCatalog(userId);
-  return catalogCache;
+    await syncPendingChanges();
+
+    const refreshedCatalog = await loadRemoteCatalog(userId);
+
+    catalogCache =
+      refreshedCatalog?.length === OPERATIONAL_CATALOG_TOTAL
+        ? refreshedCatalog
+        : catalogCache;
+
+    return catalogCache;
+  } catch (error) {
+    console.error("Falha ao carregar ou sincronizar coleção:", error);
+    catalogCache = createLocalCatalog(userId);
+    return catalogCache;
+  }
 }
 
 function createLocalCatalog(userId) {
@@ -400,19 +409,24 @@ function getSyncQueue() {
 }
 
 async function loadRemoteCatalog(userId) {
-  const [remoteStickers, userStickers] = await Promise.all([
+  const [remoteStickers, userStickers, remoteSections] = await Promise.all([
     requestSupabase("/stickers?select=id,album_id,section_id,code,number,title,subtitle,page,position,rarity,type,country_code,team_code,group_code,player_name,player_number,display_order,is_special,foil,sections(name)&status=eq.active"),
-    requestSupabase(`/user_stickers?select=sticker_id,has_sticker&user_id=eq.${encodeURIComponent(userId)}`)
+    requestSupabase(`/user_stickers?select=sticker_id,has_sticker&user_id=eq.${encodeURIComponent(userId)}`),
+    requestSupabase("/sections?select=id,album_id,slug,name,display_order,status&status=eq.active")
   ]);
   const ownership = new Map(userStickers.map((item) => [item.sticker_id, item.has_sticker]));
+  const remoteSectionCache = remoteSections.map(enrichRemoteSection);
+  const remoteSectionsById = new Map(remoteSectionCache.map((section) => [section.id, section]));
 
   const mappedStickers = remoteStickers.map((item) => ({
     ...item,
-    section_name: item.sections?.name || "Sem secao",
+    section_name: item.sections?.name || remoteSectionsById.get(item.section_id)?.name || "Sem secao",
     type: item.type || item.rarity || "player",
-    teamCode: item.team_code || "",
-    teamName: item.sections?.name || "Sem secao",
-    groupCode: item.group_code || "",
+    team_code: item.team_code || remoteSectionsById.get(item.section_id)?.team_code || "",
+    teamCode: item.team_code || remoteSectionsById.get(item.section_id)?.team_code || "",
+    teamName: remoteSectionsById.get(item.section_id)?.name || item.sections?.name || "Sem secao",
+    group_code: item.group_code || remoteSectionsById.get(item.section_id)?.group_code || "",
+    groupCode: item.group_code || remoteSectionsById.get(item.section_id)?.group_code || "",
     playerName: item.player_name || item.title || "",
     playerNumber: item.player_number || null,
     displayOrder: item.display_order || item.number || 0,
@@ -432,23 +446,42 @@ async function loadRemoteCatalog(userId) {
     ...album,
     total_stickers: OPERATIONAL_CATALOG_TOTAL
   }));
-  sectionsCache = fallbackCatalog.sections;
+  sectionsCache = remoteSectionCache.sort((a, b) => a.display_order - b.display_order);
 
   return mappedStickers;
 }
 
+function enrichRemoteSection(section) {
+  const fallbackSection = fallbackCatalog.sections.find((item) => (
+    normalize(item.slug) === normalize(section.slug)
+    || normalize(item.name) === normalize(section.name)
+  ));
+
+  return {
+    ...section,
+    code: fallbackSection?.code || section.slug?.toUpperCase() || "",
+    country_code: fallbackSection?.country_code || "",
+    team_code: fallbackSection?.team_code || "",
+    group_code: fallbackSection?.group_code || "",
+    kind: fallbackSection?.kind || "special"
+  };
+}
+
 async function upsertRemoteOwnership(userId, stickerId, hasSticker) {
-  await requestSupabase("/user_stickers?on_conflict=user_id,sticker_id", {
-    method: "POST",
-    headers: {
-      Prefer: "resolution=merge-duplicates"
-    },
-    body: JSON.stringify({
-      user_id: userId,
-      sticker_id: stickerId,
-      has_sticker: hasSticker
-    })
-  });
+  return requestSupabase(
+    "/user_stickers?on_conflict=user_id,sticker_id",
+    {
+      method: "POST",
+      headers: {
+        Prefer: "resolution=merge-duplicates,return=representation"
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        sticker_id: stickerId,
+        has_sticker: Boolean(hasSticker)
+      })
+    }
+  );
 }
 
 async function requestSupabase(path, options = {}) {
@@ -471,8 +504,27 @@ async function requestSupabase(path, options = {}) {
   });
 
   if (!response.ok) {
-    throw new Error("Falha ao comunicar com Supabase.");
+  let errorPayload = null;
+
+  try {
+    errorPayload = await response.json();
+  } catch {
+    errorPayload = await response.text().catch(() => "");
   }
+
+  console.error("Erro Supabase:", {
+    status: response.status,
+    path,
+    response: errorPayload
+  });
+
+  const message =
+    errorPayload?.message ||
+    errorPayload?.details ||
+    `Erro HTTP ${response.status}`;
+
+  throw new Error(`Falha ao comunicar com Supabase: ${message}`);
+}
 
   if (response.status === 204) return null;
   return response.json();

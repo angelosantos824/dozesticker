@@ -179,6 +179,17 @@ Complemento aplicado:
 - Quando a Sprint 06 carregar o catalogo do Supabase, o catalogo remoto substituira o fallback local quando houver registros.
 - `node scripts/validate-catalog.js` valida total 992, sequencias por selecao, FWC, INTRO, CC, duplicados e ausencia de Epic Silver/Legendary Gold.
 
+## Estado da Sprint 05.2
+
+Implementado:
+
+- Colecao, Feira, Modo Troca e Album renderizam listas agrupadas por secao/selecao.
+- A ordem visual usa `display_order` da secao e, dentro de cada selecao, `display_order`/`number` da figurinha.
+- Cada cabecalho mostra bandeira, nome da selecao, quantidade obtida, percentual e barra de progresso.
+- Navegacao rapida horizontal permite saltar suavemente para INTRO, FWC, selecoes e CC.
+- O agrupamento e feito em memoria com `Map`, sem consultas por selecao durante pesquisa ou filtro.
+- Cards, botoes, raridade e status foram preservados.
+
 ## Estado da Sprint 05.1
 
 Versao: 0.5.1

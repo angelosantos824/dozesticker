@@ -125,7 +125,10 @@
 }
 
 .album-grid {
-  display: grid;
+  display: block;
+}
+
+.album-grid .sticker-section-grid {
   grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
   gap: var(--space-3);
 }
@@ -249,7 +252,7 @@
     justify-items: start;
   }
 
-  .album-grid {
+  .album-grid .sticker-section-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

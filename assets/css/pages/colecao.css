@@ -29,9 +29,7 @@
 }
 
 .sticker-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(13.5rem, 1fr));
-  gap: var(--space-4);
+  display: block;
 }
 
 .sticker-card {
@@ -125,8 +123,12 @@
 }
 
 .trade-list {
-  display: grid;
-  gap: var(--space-3);
+  display: block;
+}
+
+.trade-list .sticker-section-nav,
+.trade-list .sticker-section-header {
+  top: 5.2rem;
 }
 
 .trade-card {

@@ -1,4 +1,4 @@
-const cacheName = "dozesticker-v0.5.2";
+const cacheName = "dozesticker-v0.5.2-selecoes";
 const appShell = [
   "./",
   "./index.html",

@@ -372,11 +372,12 @@ async function renderCollection() {
   const search = document.querySelector("[data-sticker-search]");
   const section = document.querySelector("[data-section-filter]");
   const filters = document.querySelector("[data-status-filters]");
+  const sections = await getSections();
   let activeStatus = "todas";
 
   section.innerHTML = [
     `<option value="">Todas as secoes</option>`,
-    ...(await getSections()).map((item) => `<option value="${item.id}">${item.name}</option>`)
+    ...sections.map((item) => `<option value="${item.id}">${item.name}</option>`)
   ].join("");
   filters.innerHTML = Object.entries(statusLabels).map(([value, label]) => `
     <button class="filter-tab" type="button" data-status="${value}" aria-pressed="${value === activeStatus}">${label}</button>
@@ -388,8 +389,9 @@ async function renderCollection() {
       sectionId: section.value,
       status: activeStatus
     });
+    const progressItems = await listCollection({ sectionId: section.value });
     grid.innerHTML = items.length
-      ? items.map(stickerCard).join("")
+      ? renderGroupedStickerSections(items, sections, stickerCard, "collection", progressItems)
       : emptyMessage("Nenhuma figurinha encontrada", "Ajuste a pesquisa ou os filtros para continuar.");
   };
 
@@ -402,6 +404,7 @@ async function renderCollection() {
   });
 
   grid.addEventListener("click", async (event) => {
+    if (handleGroupJump(event)) return;
     const button = event.target.closest("[data-sticker-id]");
     if (!button) return;
     const stickerId = button.dataset.stickerId;
@@ -434,17 +437,20 @@ async function renderTradeMode() {
   const list = document.querySelector("[data-trade-list]");
   const search = document.querySelector("[data-trade-search]");
   const statsArea = document.querySelector("[data-trade-stats]");
+  const sections = await getSections();
 
   const paint = async () => {
     const stats = await getStats();
     statsArea.innerHTML = compactStats(stats);
     const items = await listCollection({ query: search.value, status: "faltam" });
+    const progressItems = await listCollection();
     list.innerHTML = items.length
-      ? items.map(tradeCard).join("")
+      ? renderGroupedStickerSections(items, sections, tradeCard, "trade", progressItems)
       : emptyMessage("Nada faltando aqui", "Limpe a pesquisa ou confira se o album ja esta completo.");
   };
 
   list.addEventListener("click", async (event) => {
+    if (handleGroupJump(event)) return;
     const button = event.target.closest("[data-sticker-id]");
     if (!button) return;
     const stickerId = button.dataset.stickerId;
@@ -471,6 +477,7 @@ async function renderFairMode() {
   const statusArea = document.querySelector("[data-sync-status]");
   const recentArea = document.querySelector("[data-recent-searches]");
   const fullscreenButton = document.querySelector("[data-fair-fullscreen]");
+  const sections = await getSections();
   let currentItems = [];
 
   const paintStatus = () => {
@@ -493,8 +500,9 @@ async function renderFairMode() {
     const stats = await getStats();
     statsArea.innerHTML = compactStats(stats);
     currentItems = await listCollection({ query: search.value, status: "faltam" });
+    const progressItems = await listCollection();
     list.innerHTML = currentItems.length
-      ? currentItems.map(fairCard).join("")
+      ? renderGroupedStickerSections(currentItems, sections, fairCard, "fair", progressItems)
       : emptyMessage("Nenhuma faltante encontrada", "Limpe a pesquisa para voltar para a lista completa de faltantes.");
     paintStatus();
     paintRecent();
@@ -519,6 +527,7 @@ async function renderFairMode() {
   };
 
   list.addEventListener("click", async (event) => {
+    if (handleGroupJump(event)) return;
     const button = event.target.closest("[data-sticker-id]");
     if (!button) return;
     await receiveSticker(button.dataset.stickerId);
@@ -624,10 +633,11 @@ async function renderAlbumPage() {
       status: activeStatus,
       type: activeType
     });
+    const progressItems = await listCollection({ sectionId: activeSectionId });
     const allStats = await getProgress();
     statsArea.innerHTML = albumStats(allStats);
     grid.innerHTML = items.length
-      ? items.map(StickerCard).join("")
+      ? renderGroupedStickerSections(items, sections, StickerCard, "album", progressItems)
       : emptyMessage("Nenhuma figurinha encontrada", "Ajuste a pesquisa, secao ou filtros.");
   };
 
@@ -652,6 +662,7 @@ async function renderAlbumPage() {
   });
 
   grid.addEventListener("click", async (event) => {
+    if (handleGroupJump(event)) return;
     const button = event.target.closest("[data-sticker-id]");
     if (!button) return;
     const stickerId = button.dataset.stickerId;
@@ -737,6 +748,200 @@ function albumStats(stats) {
     <article class="surface mini-stat"><span>Duplicadas</span><strong>${stats.duplicates}</strong></article>
   `;
 }
+
+function renderGroupedStickerSections(items, sections, cardRenderer, variant, progressItems = items) {
+  const groups = buildStickerGroups(items, sections, progressItems);
+
+  return `
+    ${groupQuickNav(groups, variant)}
+    <div class="sticker-section-stack ${variant === "fair" ? "is-fair" : ""}">
+      ${groups.map((group) => `
+        <section class="sticker-section" id="${group.domId}">
+          <header class="sticker-section-header">
+            <div class="sticker-section-title">
+              <span class="sticker-section-flag" aria-hidden="true">${group.flag}</span>
+              <div>
+                <h2>${escapeHtml(group.name)}</h2>
+                <p>${group.have} de ${group.total} figurinhas</p>
+              </div>
+            </div>
+            <div class="sticker-section-progress">
+              <strong>${group.progress}%</strong>
+              ${ProgressBar(group.progress)}
+            </div>
+          </header>
+          <div class="${variant === "collection" || variant === "album" ? "sticker-section-grid" : "sticker-section-list"}">
+            ${group.items.map(cardRenderer).join("")}
+          </div>
+        </section>
+      `).join("")}
+    </div>
+  `;
+}
+
+function buildStickerGroups(items, sections, progressItems) {
+  const sectionsById = new Map(sections.map((section) => [section.id, section]));
+  const progressBySection = new Map();
+
+  progressItems.forEach((item) => {
+    const sectionId = getStickerSectionId(item);
+    const current = progressBySection.get(sectionId) || { have: 0, total: 0 };
+    current.total += 1;
+    if (item.hasSticker) current.have += 1;
+    progressBySection.set(sectionId, current);
+  });
+
+  const groups = new Map();
+
+  items.forEach((item) => {
+    const sectionId = getStickerSectionId(item);
+    const section = sectionsById.get(sectionId) || createVirtualSection(item, sectionId);
+    const key = section.id;
+
+    if (!groups.has(key)) {
+      groups.set(key, {
+        id: key,
+        domId: groupDomId(key),
+        name: section.name || item.section_name || item.teamName || item.team_code || "Secao",
+        code: section.team_code || section.code || item.team_code || item.teamCode || item.code,
+        kind: section.kind || (item.team_code ? "team" : "special"),
+        displayOrder: Number(section.display_order ?? item.display_order ?? item.number ?? 0),
+        items: []
+      });
+    }
+
+    groups.get(key).items.push(item);
+  });
+
+  return [...groups.values()]
+    .map((group) => {
+      const progress = progressBySection.get(group.id) || {
+        have: group.items.filter((item) => item.hasSticker).length,
+        total: group.items.length
+      };
+
+      group.items.sort(compareStickers);
+      return {
+        ...group,
+        flag: getSectionFlag(group),
+        have: progress.have,
+        total: progress.total,
+        progress: progress.total ? Math.round((progress.have / progress.total) * 100) : 0
+      };
+    })
+    .sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name));
+}
+
+function groupQuickNav(groups, variant) {
+  return `
+    <nav class="sticker-section-nav ${variant === "fair" ? "is-fair" : ""}" aria-label="Navegacao rapida por selecao">
+      ${groups.map((group) => `
+        <button class="sticker-section-nav-item" type="button" data-group-jump="${group.domId}" title="${escapeAttribute(group.name)}">
+          <span aria-hidden="true">${group.flag}</span>
+          <span>${escapeHtml(group.kind === "team" ? group.code : group.name)}</span>
+        </button>
+      `).join("")}
+    </nav>
+  `;
+}
+
+function handleGroupJump(event) {
+  const button = event.target.closest("[data-group-jump]");
+  if (!button) return false;
+
+  event.preventDefault();
+  document.getElementById(button.dataset.groupJump)?.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
+  return true;
+}
+
+function getStickerSectionId(sticker) {
+  if (sticker.section_id) return sticker.section_id;
+  if (sticker.team_code || sticker.teamCode) return `team-${String(sticker.team_code || sticker.teamCode).toLowerCase()}`;
+  return String(sticker.group_code || sticker.groupCode || "catalogo").toLowerCase();
+}
+
+function createVirtualSection(sticker, sectionId) {
+  return {
+    id: sectionId,
+    name: sticker.section_name || sticker.teamName || sticker.team_code || sticker.code || "Secao",
+    code: sticker.team_code || sticker.teamCode || sticker.group_code || sticker.groupCode || "",
+    team_code: sticker.team_code || sticker.teamCode || "",
+    kind: sticker.team_code || sticker.teamCode ? "team" : "special",
+    display_order: sticker.display_order || sticker.number || 0
+  };
+}
+
+function compareStickers(a, b) {
+  return Number(a.display_order ?? a.displayOrder ?? a.number ?? 0) - Number(b.display_order ?? b.displayOrder ?? b.number ?? 0)
+    || Number(a.number ?? 0) - Number(b.number ?? 0)
+    || String(a.code).localeCompare(String(b.code));
+}
+
+function groupDomId(value) {
+  return `sticker-section-${String(value).toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+}
+
+function getSectionFlag(group) {
+  if (group.kind !== "team") {
+    return group.code === "CC" ? "CC" : "★";
+  }
+
+  return teamFlags[group.code] || group.code;
+}
+
+const teamFlags = {
+  MEX: "🇲🇽",
+  RSA: "🇿🇦",
+  KOR: "🇰🇷",
+  CZE: "🇨🇿",
+  CAN: "🇨🇦",
+  RUS: "🇷🇺",
+  QAT: "🇶🇦",
+  SUI: "🇨🇭",
+  BRA: "🇧🇷",
+  MAR: "🇲🇦",
+  HAI: "🇭🇹",
+  SCO: "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
+  USA: "🇺🇸",
+  PAR: "🇵🇾",
+  AUS: "🇦🇺",
+  TUR: "🇹🇷",
+  GER: "🇩🇪",
+  CUW: "🇨🇼",
+  CIV: "🇨🇮",
+  ECU: "🇪🇨",
+  NED: "🇳🇱",
+  JPN: "🇯🇵",
+  SWE: "🇸🇪",
+  TUN: "🇹🇳",
+  BEL: "🇧🇪",
+  EGY: "🇪🇬",
+  IRN: "🇮🇷",
+  NZL: "🇳🇿",
+  ESP: "🇪🇸",
+  CPV: "🇨🇻",
+  KSA: "🇸🇦",
+  URU: "🇺🇾",
+  FRA: "🇫🇷",
+  SEN: "🇸🇳",
+  IRQ: "🇮🇶",
+  NOR: "🇳🇴",
+  ARG: "🇦🇷",
+  ALG: "🇩🇿",
+  AUT: "🇦🇹",
+  JOR: "🇯🇴",
+  POR: "🇵🇹",
+  COD: "🇨🇩",
+  UZB: "🇺🇿",
+  COL: "🇨🇴",
+  ENG: "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+  CRO: "🇭🇷",
+  GHA: "🇬🇭",
+  PAN: "🇵🇦"
+};
 
 function renderPlaceholder(page) {
   const data = placeholderPages[page];
