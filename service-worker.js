@@ -1,4 +1,4 @@
-const cacheName = "dozesticker-v0.6.8-admin-user-stats";
+const cacheName = "dozesticker-v0.6.9-mobile-album-flex";
 const appShell = [
   "./",
   "./index.html",
@@ -24,9 +24,11 @@ const appShell = [
   "./assets/css/layout.css",
   "./assets/css/components.css",
   "./assets/css/responsive.css",
+  "./assets/css/responsive.css?v=0.6.9",
   "./assets/css/pages/auth.css",
   "./assets/css/pages/feira.css",
   "./assets/css/pages/album.css",
+  "./assets/css/pages/album.css?v=0.6.9",
   "./assets/css/pages/dashboard.css",
   "./assets/css/pages/colecao.css",
   "./assets/js/app.js",

@@ -269,78 +269,6 @@
     padding-bottom: calc(6rem + env(safe-area-inset-bottom));
   }
 
-  .sticker-section-grid {
-    display: grid;
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    gap: 0.625rem;
-    grid-auto-flow: row;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .sticker-section-grid > .album-sticker {
-    grid-column: auto;
-    grid-row: auto;
-    width: auto;
-    max-width: 100%;
-    min-width: 0;
-    margin: 0;
-    box-sizing: border-box;
-  }
-
-  .album-sticker {
-    min-height: 0;
-    gap: 0.5rem;
-    padding: 0.5rem;
-  }
-
-  .album-sticker > * {
-    max-width: 100%;
-    min-width: 0;
-  }
-
-  .album-sticker-frame {
-    width: 100%;
-    aspect-ratio: 4 / 3;
-    height: auto;
-    min-height: 0;
-    background-size: 0.75rem 0.75rem;
-  }
-
-  .album-sticker-code {
-    font-size: 0.78rem;
-    line-height: 1;
-  }
-
-  .album-sticker h3 {
-    display: -webkit-box;
-    overflow: hidden;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
-    font-size: 0.88rem;
-    line-height: 1.2;
-    overflow-wrap: anywhere;
-  }
-
-  .album-sticker-title {
-    font-size: 0.82rem;
-    line-height: 1.15;
-    overflow-wrap: anywhere;
-  }
-
-  .album-sticker p {
-    font-size: 0.72rem;
-    line-height: 1.2;
-  }
-
-  .album-sticker-state {
-    width: 100%;
-    min-width: 0;
-    min-height: 42px;
-    padding: 0.55rem 0.25rem;
-    font-size: 0.78rem;
-  }
 }
 
 @media (max-width: 560px) {
@@ -362,9 +290,6 @@
     justify-items: start;
   }
 
-  .sticker-section-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 @media (max-width: 480px) {
@@ -415,35 +340,6 @@
     font-size: 1.2rem;
   }
 
-  .sticker-section-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .album-sticker {
-    min-height: 0;
-  }
-
-  .album-sticker-frame {
-    min-height: 0;
-  }
-
-  .album-sticker h3 {
-    font-size: 0.82rem;
-  }
-
-  .album-sticker p {
-    display: none;
-  }
-
-  .album-sticker-state {
-    font-size: 0.76rem;
-  }
-
-  .album-sticker-code {
-    font-size: 0.72rem;
-    line-height: 1;
-  }
-
   .rare-star {
     top: var(--space-1);
     right: var(--space-1);
@@ -453,17 +349,7 @@
   }
 }
 
-@media (max-width: 380px) {
-  .album-sticker-frame {
-    aspect-ratio: 1 / 0.72;
-  }
-}
-
 @media (max-width: 339px) {
-  .sticker-section-grid {
-    grid-template-columns: 1fr;
-  }
-
   .album-sticker-code,
   .album-sticker h3,
   .album-sticker p {
@@ -472,10 +358,6 @@
 }
 
 @media (max-height: 520px) and (orientation: landscape) and (max-width: 940px) {
-  .album-grid .sticker-section-grid {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-  }
-
   .album-sticker {
     min-height: 8rem;
     padding: var(--space-2);
@@ -491,5 +373,98 @@
 
   .album-sticker p {
     display: none;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .album-grid,
+  .sticker-section-stack,
+  .sticker-section {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .sticker-section-grid {
+    display: flex;
+    flex-flow: row wrap;
+    align-items: stretch;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    gap: 0.625rem;
+    overflow: visible;
+    box-sizing: border-box;
+  }
+
+  .sticker-section-grid > .album-sticker {
+    flex: 0 0 calc((100% - 0.625rem) / 2);
+    width: calc((100% - 0.625rem) / 2);
+    max-width: calc((100% - 0.625rem) / 2);
+    min-width: 0;
+    margin: 0;
+    box-sizing: border-box;
+  }
+
+  .album-sticker {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    min-height: 0;
+    padding: 0.45rem;
+    border-radius: 0.65rem;
+  }
+
+  .album-sticker-frame {
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    height: auto;
+    min-height: 0;
+    aspect-ratio: 4 / 3;
+  }
+
+  .album-sticker-body {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .album-sticker-code {
+    font-size: 0.72rem;
+    line-height: 1.1;
+  }
+
+  .album-sticker h3 {
+    display: -webkit-box;
+    margin: 0;
+    overflow: hidden;
+    font-size: 0.78rem;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .album-sticker p {
+    display: none;
+  }
+
+  .album-sticker-state {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    min-height: 40px;
+    padding: 0.45rem 0.2rem;
+    font-size: 0.75rem;
+  }
+}
+
+@media screen and (max-width: 319px) {
+  .sticker-section-grid > .album-sticker {
+    flex-basis: 100%;
+    width: 100%;
+    max-width: 100%;
   }
 }
