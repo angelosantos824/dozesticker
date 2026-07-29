@@ -1,4 +1,5 @@
 import { getSession, signOut } from "../services/auth.service.js";
+import { isPlatformAdmin } from "../services/admin.service.js";
 
 const sidebarStateKey = "dozesticker:sidebar-collapsed";
 
@@ -22,8 +23,9 @@ export async function renderNavigation(currentPage) {
   if (!sidebar && !mobileNav) return;
 
   const session = await getSession().catch(() => null);
+  const isAdmin = session ? await isPlatformAdmin() : false;
   const navItems = session
-    ? privateItems.filter((item) => !item.admin || isPlatformAdminSession(session))
+    ? privateItems.filter((item) => !item.admin || isAdmin)
     : publicItems;
 
   if (sidebar) {
@@ -60,13 +62,6 @@ export async function renderNavigation(currentPage) {
       document.body.classList.toggle("is-sidebar-collapsed", collapsed);
     });
   });
-}
-
-function isPlatformAdminSession(session) {
-  const role = session?.user?.app_metadata?.role;
-  const roles = session?.user?.app_metadata?.roles || [];
-  return ["admin", "super_admin", "platform_admin"].includes(role)
-    || roles.some((item) => ["admin", "super_admin", "platform_admin"].includes(item));
 }
 
 function navLink(item, currentPage, className) {

@@ -28,7 +28,7 @@
   display: grid;
   min-width: 0;
   gap: var(--space-4);
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
 .admin-stat-card {
@@ -75,6 +75,46 @@
   color: var(--color-muted);
   font-size: 0.9rem;
   font-weight: 800;
+}
+
+.admin-trade-event {
+  min-width: 0;
+}
+
+.admin-event-card {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-4);
+  border: 1px solid rgba(181, 92, 255, 0.28);
+  border-radius: var(--radius-md);
+  background: rgba(7, 20, 15, 0.45);
+  padding: var(--space-4);
+}
+
+.admin-event-details {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-3);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.admin-event-details div {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+}
+
+.admin-event-details span {
+  color: var(--color-muted);
+  font-size: 0.76rem;
+  font-weight: 850;
+}
+
+.admin-event-details strong {
+  min-width: 0;
+  color: var(--color-white);
+  font-size: 0.92rem;
+  overflow-wrap: anywhere;
 }
 
 .admin-overview.is-loading .admin-stat-card {
@@ -161,6 +201,10 @@
     gap: var(--space-3);
   }
 
+  .admin-event-details {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .admin-stat-card--primary {
     grid-column: 1 / -1;
   }
@@ -195,7 +239,8 @@
 }
 
 @media (max-width: 360px) {
-  .admin-stats-grid {
+  .admin-stats-grid,
+  .admin-event-details {
     grid-template-columns: 1fr;
   }
 }

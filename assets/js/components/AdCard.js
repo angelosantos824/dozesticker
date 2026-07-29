@@ -13,6 +13,7 @@ export function AdCard(ad) {
       <div class="ad-card-body">
         <p class="eyebrow">Anuncio</p>
         <h3>${escapeHtml(ad.title)}</h3>
+        ${ad.venue_name ? `<p><strong>${escapeHtml(ad.venue_name)}</strong></p>` : ""}
         ${ad.description ? `<p>${escapeHtml(ad.description)}</p>` : ""}
         <div class="ad-actions">
           ${destinationUrl ? `<a class="button button-primary" href="${escapeAttribute(destinationUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(ad.cta_label || "Abrir")}</a>` : ""}

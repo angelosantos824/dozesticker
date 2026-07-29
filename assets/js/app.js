@@ -35,9 +35,11 @@ import {
   toggleSticker
 } from "./services/collection.service.js";
 import {
+  buildMapLinks,
   deleteAd,
   getActiveAds,
   getAdminAds,
+  getNextTradeEvent,
   saveAd,
   updateAdStatus,
   uploadAdImage
@@ -188,10 +190,22 @@ async function renderAdsAdmin() {
 
   let ads = [];
   let editingAd = null;
+  let initializedFromParams = false;
+  const params = new URLSearchParams(window.location.search);
+  const type = params.get("type");
+  const editId = params.get("edit");
 
   const paint = async () => {
     try {
       ads = await getAdminAds();
+      if (!initializedFromParams) {
+        if (editId) {
+          editingAd = ads.find((item) => item.id === editId) || null;
+        } else if (type === "trade_event") {
+          editingAd = createTradeEventDraft();
+        }
+        initializedFromParams = true;
+      }
       area.innerHTML = adsAdminTemplate(ads, editingAd);
     } catch (error) {
       area.innerHTML = `
@@ -215,13 +229,7 @@ async function renderAdsAdmin() {
     try {
       if (action === "new") editingAd = null;
       if (action === "new-trade-event") {
-        editingAd = {
-          placement: "trade_event",
-          title: "Evento de troca",
-          cta_label: "Participar",
-          status: "draft",
-          display_order: 0
-        };
+        editingAd = createTradeEventDraft();
       }
       if (action === "edit") editingAd = ad;
       if (action === "duplicate") editingAd = { ...ad, id: "", title: `${ad.title} copia`, status: "draft" };
@@ -259,6 +267,7 @@ async function renderAdsAdmin() {
         whatsapp: formData.get("whatsapp"),
         phone: formData.get("phone"),
         address: formData.get("address"),
+        venue_name: formData.get("venue_name"),
         latitude: formData.get("latitude"),
         longitude: formData.get("longitude"),
         google_maps_url: formData.get("google_maps_url"),
@@ -570,6 +579,7 @@ async function renderAdminOverview() {
   try {
     const stats = await getAdminUserStats();
     overview.querySelector("[data-total-users]").textContent = formatNumber(stats.totalUsers);
+    overview.querySelector("[data-active-users]").textContent = formatNumber(stats.activeUsers);
     overview.querySelector("[data-users-today]").textContent = formatNumber(stats.registeredToday);
     overview.querySelector("[data-users-seven-days]").textContent = formatNumber(stats.registeredLast7Days);
     overview.querySelector("[data-users-thirty-days]").textContent = formatNumber(stats.registeredLast30Days);
@@ -578,6 +588,7 @@ async function renderAdminOverview() {
       : "0 utilizadores cadastrados";
     status.textContent = "";
     overview.classList.remove("is-loading");
+    await renderNextTradeEvent(overview);
   } catch (error) {
     overview.classList.remove("is-loading");
     overview.classList.add("has-error");
@@ -601,19 +612,87 @@ function adminOverviewTemplate() {
           <strong data-total-users>0</strong>
         </article>
         <article class="admin-stat-card">
-          <span>Cadastros hoje</span>
+          <span>Utilizadores ativos</span>
+          <strong data-active-users>0</strong>
+        </article>
+        <article class="admin-stat-card">
+          <span>Novos hoje</span>
           <strong data-users-today>0</strong>
         </article>
         <article class="admin-stat-card">
-          <span>Ultimos 7 dias</span>
+          <span>Novos nos ultimos 7 dias</span>
           <strong data-users-seven-days>0</strong>
         </article>
         <article class="admin-stat-card">
-          <span>Ultimos 30 dias</span>
+          <span>Novos nos ultimos 30 dias</span>
           <strong data-users-thirty-days>0</strong>
         </article>
       </div>
       <p class="admin-last-registration" data-last-registration></p>
+      <div class="admin-trade-event" data-next-trade-event>
+        <p class="admin-status">Carregando proxima feira...</p>
+      </div>
+      <div class="actions-row">
+        <a class="button button-primary" href="admin-anuncios.html?type=trade_event">Cadastrar feira</a>
+        <a class="button button-secondary" href="admin-anuncios.html">Gerenciar anuncios</a>
+      </div>
+    </section>
+  `;
+}
+
+async function renderNextTradeEvent(overview) {
+  const target = overview.querySelector("[data-next-trade-event]");
+  if (!target) return;
+
+  try {
+    const event = await getNextTradeEvent();
+    target.innerHTML = nextTradeEventTemplate(event);
+  } catch (error) {
+    console.error("[ADMIN] Falha ao carregar proxima feira", error);
+    target.innerHTML = `<p class="admin-status">Nao foi possivel carregar a proxima feira de trocas.</p>`;
+  }
+}
+
+function nextTradeEventTemplate(event) {
+  if (!event) {
+    return `
+      <section class="admin-event-card">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Proxima feira de trocas</p>
+            <h2>Nenhuma feira cadastrada</h2>
+          </div>
+        </div>
+        <p class="muted">Cadastre uma feira para mostrar local, horario e contatos no Dashboard administrativo.</p>
+        <div class="actions-row">
+          <a class="button button-primary" href="admin-anuncios.html?type=trade_event">Cadastrar feira</a>
+        </div>
+      </section>
+    `;
+  }
+
+  const links = buildMapLinks(event);
+  return `
+    <section class="admin-event-card">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Proxima feira de trocas</p>
+          <h2>${escapeHtml(event.title || "Feira de trocas")}</h2>
+        </div>
+        <span class="badge ${event.status === "active" ? "badge-owned" : "badge-stuck"}">${escapeHtml(event.status)}</span>
+      </div>
+      <div class="admin-event-details">
+        <div><span>Data e hora</span><strong>${formatDateTime(event.starts_at)}</strong></div>
+        <div><span>Nome do local</span><strong>${escapeHtml(event.venue_name || "-")}</strong></div>
+        <div><span>Endereco</span><strong>${escapeHtml(event.address || "-")}</strong></div>
+        <div><span>WhatsApp</span><strong>${escapeHtml(event.whatsapp || "-")}</strong></div>
+        <div><span>Telefone</span><strong>${escapeHtml(event.phone || "-")}</strong></div>
+      </div>
+      <div class="actions-row">
+        ${links.googleMapsUrl ? `<a class="button button-secondary" href="${escapeAttribute(links.googleMapsUrl)}" target="_blank" rel="noopener noreferrer">Google Maps</a>` : ""}
+        ${links.appleMapsUrl ? `<a class="button button-secondary" href="${escapeAttribute(links.appleMapsUrl)}" target="_blank" rel="noopener noreferrer">Apple Maps</a>` : ""}
+        <a class="button button-primary" href="admin-anuncios.html?edit=${escapeAttribute(event.id)}">Editar feira</a>
+      </div>
     </section>
   `;
 }
@@ -1039,6 +1118,7 @@ function albumStats(stats) {
 
 function adsAdminTemplate(ads, editingAd) {
   const ad = editingAd || {};
+  const isTradeEvent = ad.placement === "trade_event";
   return `
     <header class="page-header">
       <div>
@@ -1057,7 +1137,7 @@ function adsAdminTemplate(ads, editingAd) {
         <div class="section-heading">
           <div>
             <p class="eyebrow">${ad.id ? "Editar" : "Novo"}</p>
-            <h2>${ad.placement === "trade_event" ? "Evento de troca" : "Anuncio"}</h2>
+            <h2>${isTradeEvent ? "Feira de trocas" : "Anuncio"}</h2>
           </div>
         </div>
         <label class="field">
@@ -1070,15 +1150,16 @@ function adsAdminTemplate(ads, editingAd) {
             ].map(([value, label]) => `<option value="${value}" ${value === (ad.placement || "public_home") ? "selected" : ""}>${label}</option>`).join("")}
           </select>
         </label>
-        ${adField("Titulo", "title", ad.title, "text", true)}
-        <label class="field"><span>Descricao</span><textarea name="description">${escapeHtml(ad.description || "")}</textarea></label>
+        ${adField(isTradeEvent ? "Nome da feira" : "Titulo", "title", ad.title, "text", true)}
+        ${isTradeEvent ? adField("Nome do local", "venue_name", ad.venue_name) : ""}
+        <label class="field"><span>${isTradeEvent ? "Informacoes da feira" : "Descricao"}</span><textarea name="description">${escapeHtml(ad.description || "")}</textarea></label>
         ${adField("Imagem atual", "image_url", ad.image_url, "url")}
         <label class="field"><span>Nova imagem</span><input name="image" type="file" accept="image/png,image/jpeg,image/webp"></label>
         ${adField("Texto do botao", "cta_label", ad.cta_label)}
         ${adField("Link externo", "destination_url", ad.destination_url, "url")}
-        ${adField("WhatsApp", "whatsapp", ad.whatsapp)}
-        ${adField("Telefone", "phone", ad.phone)}
-        ${adField("Endereco", "address", ad.address)}
+        ${adField(isTradeEvent ? "WhatsApp para contato" : "WhatsApp", "whatsapp", ad.whatsapp)}
+        ${adField(isTradeEvent ? "Telefone para contato" : "Telefone", "phone", ad.phone)}
+        ${adField(isTradeEvent ? "Endereco completo da feira" : "Endereco", "address", ad.address)}
         <div class="admin-form-pair">
           ${adField("Latitude", "latitude", ad.latitude, "number")}
           ${adField("Longitude", "longitude", ad.longitude, "number")}
@@ -1086,8 +1167,8 @@ function adsAdminTemplate(ads, editingAd) {
         ${adField("Google Maps", "google_maps_url", ad.google_maps_url, "url")}
         ${adField("Apple Maps", "apple_maps_url", ad.apple_maps_url, "url")}
         <div class="admin-form-pair">
-          ${adField("Inicio", "starts_at", toDateTimeLocal(ad.starts_at), "datetime-local")}
-          ${adField("Fim", "ends_at", toDateTimeLocal(ad.ends_at), "datetime-local")}
+          ${adField(isTradeEvent ? "Data e hora da feira" : "Inicio", "starts_at", toDateTimeLocal(ad.starts_at), "datetime-local")}
+          ${adField(isTradeEvent ? "Data e hora de encerramento" : "Fim", "ends_at", toDateTimeLocal(ad.ends_at), "datetime-local")}
         </div>
         <div class="admin-form-pair">
           ${adField("Ordem", "display_order", ad.display_order ?? 0, "number")}
@@ -1108,6 +1189,16 @@ function adsAdminTemplate(ads, editingAd) {
   `;
 }
 
+function createTradeEventDraft() {
+  return {
+    placement: "trade_event",
+    title: "Feira de trocas",
+    cta_label: "Ver localizacao",
+    status: "draft",
+    display_order: 0
+  };
+}
+
 function adField(label, name, value = "", type = "text", required = false) {
   return `
     <label class="field">
@@ -1123,6 +1214,7 @@ function adminAdRow(ad) {
       <div class="admin-ad-thumb">${ad.image_url ? `<img src="${escapeAttribute(ad.image_url)}" alt="" loading="lazy">` : "12"}</div>
       <div>
         <h2>${escapeHtml(ad.title)}</h2>
+        ${ad.venue_name ? `<p class="muted">${escapeHtml(ad.venue_name)}</p>` : ""}
         <p class="muted">${placementLabel(ad.placement)} · ${escapeHtml(ad.status)} · ordem ${Number(ad.display_order || 0)}</p>
         <p class="muted">${formatDate(ad.starts_at)} - ${formatDate(ad.ends_at)}</p>
       </div>

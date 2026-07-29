@@ -1,4 +1,4 @@
-const cacheName = "dozesticker-v0.6.9-mobile-album-flex";
+const cacheName = "dozesticker-v0.7.0-admin-dashboard-trade-event";
 const appShell = [
   "./",
   "./index.html",

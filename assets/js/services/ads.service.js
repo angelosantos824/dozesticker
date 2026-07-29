@@ -12,7 +12,7 @@ export async function getActiveAds({ force = false } = {}) {
     return activeAdsCache;
   }
 
-  const query = "/ads?select=id,title,description,image_url,cta_label,destination_url,whatsapp,phone,address,latitude,longitude,google_maps_url,apple_maps_url,placement,display_order,starts_at,ends_at&status=eq.active&order=display_order.asc";
+  const query = "/ads?select=id,title,description,image_url,cta_label,destination_url,whatsapp,phone,address,venue_name,latitude,longitude,google_maps_url,apple_maps_url,placement,display_order,starts_at,ends_at&status=eq.active&order=display_order.asc";
   const ads = await requestSupabase(query, { publicRead: true }).catch(() => []);
   activeAdsCache = ads.filter(isActiveByPeriod).map(normalizeAd);
   activeAdsCacheAt = Date.now();
@@ -22,6 +22,27 @@ export async function getActiveAds({ force = false } = {}) {
 export async function getAdminAds() {
   const ads = await requestSupabase("/ads?select=*&order=display_order.asc,created_at.desc");
   return ads.map(normalizeAd);
+}
+
+export async function getNextTradeEvent() {
+  const ads = await getAdminAds();
+
+  return ads
+    .filter((ad) =>
+      ad.placement === "trade_event" &&
+      ["draft", "active"].includes(ad.status)
+    )
+    .sort((a, b) => {
+      const dateA = a.starts_at
+        ? new Date(a.starts_at).getTime()
+        : Number.MAX_SAFE_INTEGER;
+
+      const dateB = b.starts_at
+        ? new Date(b.starts_at).getTime()
+        : Number.MAX_SAFE_INTEGER;
+
+      return dateA - dateB;
+    })[0] || null;
 }
 
 export async function saveAd(ad) {
@@ -140,6 +161,7 @@ function sanitizeAdPayload(ad) {
     whatsapp: String(ad.whatsapp || "").trim() || null,
     phone: String(ad.phone || "").trim() || null,
     address: String(ad.address || "").trim() || null,
+    venue_name: String(ad.venue_name || "").trim() || null,
     latitude: toNullableNumber(ad.latitude),
     longitude: toNullableNumber(ad.longitude),
     google_maps_url: sanitizeUrl(ad.google_maps_url) || null,

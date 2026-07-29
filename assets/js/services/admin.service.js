@@ -7,9 +7,13 @@ export async function isPlatformAdmin() {
       .schema("dozesticker")
       .rpc("is_platform_admin");
 
-    if (error) return false;
+    if (error) {
+      console.error("[ADMIN] Falha ao validar administrador", error);
+      return false;
+    }
     return data === true;
   } catch (error) {
+    console.error("[ADMIN] Falha ao validar administrador", error);
     return false;
   }
 }
@@ -21,6 +25,7 @@ export async function getAdminUserStats() {
     .rpc("get_admin_user_stats");
 
   if (error) {
+    console.error("[ADMIN] Falha ao carregar estatisticas", error);
     throw error;
   }
 
@@ -28,6 +33,7 @@ export async function getAdminUserStats() {
 
   return {
     totalUsers: Number(stats?.total_users || 0),
+    activeUsers: Number(stats?.active_users || 0),
     registeredToday: Number(stats?.registered_today || 0),
     registeredLast7Days: Number(stats?.registered_last_7_days || 0),
     registeredLast30Days: Number(stats?.registered_last_30_days || 0),
