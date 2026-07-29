@@ -209,9 +209,8 @@ async function ensureCatalog() {
     : createFallbackCatalog();
 
   const validStickerIds = getValidStickerIds(base.stickers);
-  const aliasMap = createStickerAliasMap(base.stickers);
-  const localOwnership = migrateStoredOwnership(userId, validStickerIds, aliasMap);
-  sanitizeSyncQueue(validStickerIds, userId, aliasMap);
+  const localOwnership = migrateStoredOwnership(userId, validStickerIds);
+  sanitizeSyncQueue(validStickerIds, userId);
 
   const pendingOwnership = getPendingOwnership(userId, validStickerIds);
   const remoteOwnership = remoteData?.ownership || new Map();
@@ -224,7 +223,7 @@ async function ensureCatalog() {
 
   if (userId !== anonymousUserId && remoteData && !recoveredUsers.has(userId)) {
     recoveredUsers.add(userId);
-    void syncRecoveryInBackground(userId, base.stickers, validStickerIds, localOwnership, remoteOwnership)
+    void syncRecoveryInBackground(userId, validStickerIds, localOwnership, remoteOwnership)
       .catch((error) => {
         console.error("Erro na recuperacao em background", error);
         emitSyncStatus("error", "Sincronizacao pendente");
@@ -430,22 +429,32 @@ function mergeOwnershipPriority(validStickerIds, pendingOwnership, localOwnershi
       return;
     }
 
-    if (Object.prototype.hasOwnProperty.call(localOwnership, stickerId) && Boolean(localOwnership[stickerId])) {
-      merged[stickerId] = true;
-      return;
-    }
-
     if (remoteOwnership.has(stickerId)) {
       merged[stickerId] = Boolean(remoteOwnership.get(stickerId));
       return;
     }
 
     if (Object.prototype.hasOwnProperty.call(localOwnership, stickerId)) {
-      merged[stickerId] = false;
+      merged[stickerId] = Boolean(localOwnership[stickerId]);
       return;
     }
 
     merged[stickerId] = false;
+  });
+
+  return merged;
+}
+
+function mergeRemoteOwnershipPriority(validStickerIds, pendingOwnership, remoteOwnership) {
+  const merged = {};
+
+  validStickerIds.forEach((stickerId) => {
+    if (pendingOwnership.has(stickerId)) {
+      merged[stickerId] = pendingOwnership.get(stickerId);
+      return;
+    }
+
+    merged[stickerId] = remoteOwnership.has(stickerId) ? Boolean(remoteOwnership.get(stickerId)) : false;
   });
 
   return merged;
@@ -468,30 +477,22 @@ function enqueueLocalRecoveryChanges(userId, validStickerIds, localOwnership, re
       return;
     }
 
+    if (remoteOwnership.has(stickerId)) {
+      console.log("[RECOVERY] ignorado remoto existente", stickerId);
+      return;
+    }
+
     enqueueChange(createQueueChange(userId, stickerId, true));
   });
 }
 
-async function syncRecoveryInBackground(userId, baseStickers, validStickerIds, localOwnership, remoteOwnership) {
+async function syncRecoveryInBackground(userId, validStickerIds, localOwnership, remoteOwnership) {
   if (recoveryPromise) return recoveryPromise;
 
   recoveryPromise = (async () => {
     emitSyncStatus("syncing", "Sincronizando colecao...");
     enqueueLocalRecoveryChanges(userId, validStickerIds, localOwnership, remoteOwnership);
     await syncPendingChanges();
-
-    const refreshedOwnership = await tryReloadRemoteOwnership(userId);
-    if (refreshedOwnership) {
-      const afterSyncOwnership = mergeOwnershipPriority(
-        validStickerIds,
-        getPendingOwnership(userId, validStickerIds),
-        getLocalOwnership(userId),
-        refreshedOwnership
-      );
-      writeMergedLocalOwnership(userId, afterSyncOwnership, validStickerIds);
-      catalogCache = mergeOwnership(baseStickers, afterSyncOwnership);
-      logCatalogSource(catalogCache);
-    }
 
     emitSyncStatus("synced", "Colecao sincronizada");
     window.dispatchEvent(new CustomEvent("dozesticker:collection-change", {
@@ -524,6 +525,35 @@ async function refreshRemoteOwnership(userId = activeUserId) {
     detail: { userId, source: "remote-refresh" }
   }));
   return mergedOwnership;
+}
+
+async function applyFinalRemoteOwnership(userId, baseStickers = catalogCache) {
+  if (!baseStickers || !canUseRemote(userId)) return null;
+
+  const refreshedOwnership = await tryReloadRemoteOwnership(userId);
+  if (!refreshedOwnership) return null;
+
+  const validStickerIds = getValidStickerIds(baseStickers);
+  const pendingOwnership = getPendingOwnership(userId, validStickerIds);
+  const finalOwnership = mergeRemoteOwnershipPriority(validStickerIds, pendingOwnership, refreshedOwnership);
+
+  console.log("[SYNC FINAL] remoto recebido", {
+    totalRegistros: refreshedOwnership.size
+  });
+  console.log("[SYNC FINAL] total true remoto", countOwned(refreshedOwnership));
+
+  writeMergedLocalOwnership(userId, finalOwnership, validStickerIds);
+  catalogCache = mergeOwnership(baseStickers, finalOwnership);
+  logCatalogSource(catalogCache);
+
+  console.log("[SYNC FINAL] total aplicado ao catálogo", countCatalogOwned(catalogCache));
+  console.log("[SYNC FINAL] progresso recalculado", calculateProgress(catalogCache));
+  console.log("[SYNC FINAL] fila pendente restante", getSyncQueue().filter((item) => item.userId === userId).length);
+
+  window.dispatchEvent(new CustomEvent("dozesticker:collection-change", {
+    detail: { userId, source: "sync-final" }
+  }));
+  return finalOwnership;
 }
 
 function setupRealtimeSubscription(userId) {
@@ -610,7 +640,6 @@ async function runSyncPendingChanges() {
   }
 
   const validStickerIds = catalogCache ? getValidStickerIds(catalogCache) : new Set();
-  const aliasMap = catalogCache ? createStickerAliasMap(catalogCache) : new Map();
   const queue = getSyncQueue();
   const remaining = [];
   const validChanges = [];
@@ -621,7 +650,12 @@ async function runSyncPendingChanges() {
       continue;
     }
 
-    const remoteStickerId = resolveStickerId(change.stickerId, validStickerIds, aliasMap);
+    if (!isUuid(change.stickerId)) {
+      console.log("[SYNC] removido stickerId legado invalido da fila", change.stickerId);
+      continue;
+    }
+
+    const remoteStickerId = validStickerIds.has(change.stickerId) ? change.stickerId : "";
     if (!remoteStickerId || !isUuid(remoteStickerId)) {
       console.log("[SYNC] sincronização cancelada", `stickerId inválido para sync: ${change.stickerId}`);
       remaining.push({ ...change, attempts: Number(change.attempts || 0) + 1 });
@@ -654,6 +688,8 @@ async function runSyncPendingChanges() {
     remaining.some((item) => item.userId === userId) ? "pending" : "synced",
     remaining.some((item) => item.userId === userId) ? "Sincronizacao pendente" : "Colecao sincronizada"
   );
+
+  await applyFinalRemoteOwnership(userId);
   return getConnectionState();
 }
 
@@ -799,7 +835,7 @@ function removeQueuedChange(userId, stickerId) {
   if (next.length !== queue.length) writeStorage(syncQueueKey, next);
 }
 
-function sanitizeSyncQueue(validStickerIds, userId = activeUserId, aliasMap = new Map()) {
+function sanitizeSyncQueue(validStickerIds, userId = activeUserId) {
   if (activeCatalogSource !== "supabase") {
     return getSyncQueue();
   }
@@ -814,14 +850,12 @@ function sanitizeSyncQueue(validStickerIds, userId = activeUserId, aliasMap = ne
       return;
     }
 
-    const resolvedStickerId = resolveStickerId(item.stickerId, validStickerIds, aliasMap);
-    if (!resolvedStickerId) {
+    if (!isUuid(item.stickerId)) {
       changed = true;
       return;
     }
 
-    if (resolvedStickerId !== item.stickerId) changed = true;
-    sanitized.push({ ...item, stickerId: resolvedStickerId });
+    sanitized.push(item);
   });
 
   if (changed || sanitized.length !== queue.length) {
@@ -833,12 +867,10 @@ function sanitizeSyncQueue(validStickerIds, userId = activeUserId, aliasMap = ne
 
 function getPendingOwnership(userId, validStickerIds) {
   const pending = new Map();
-  const aliasMap = catalogCache ? createStickerAliasMap(catalogCache) : new Map();
 
   getSyncQueue().forEach((item) => {
-    const resolvedStickerId = resolveStickerId(item.stickerId, validStickerIds, aliasMap);
-    if (item.userId === userId && resolvedStickerId) {
-      pending.set(resolvedStickerId, Boolean(item.hasSticker));
+    if (item.userId === userId && isUuid(item.stickerId) && validStickerIds.has(item.stickerId)) {
+      pending.set(item.stickerId, Boolean(item.hasSticker));
     }
   });
 
@@ -869,18 +901,20 @@ function sanitizeOwnershipObject(ownership, validStickerIds) {
   return sanitized;
 }
 
-function migrateStoredOwnership(userId, validStickerIds, aliasMap) {
+function migrateStoredOwnership(userId, validStickerIds) {
   const stored = readStorage(getOwnershipKey(userId), {});
   const migrated = {};
   const preservedUnknown = {};
   let changed = false;
 
   Object.entries(stored || {}).forEach(([stickerId, hasSticker]) => {
-    const resolvedStickerId = resolveStickerId(stickerId, validStickerIds, aliasMap);
+    if (!isUuid(stickerId)) {
+      changed = true;
+      return;
+    }
 
-    if (resolvedStickerId) {
-      migrated[resolvedStickerId] = Boolean(hasSticker);
-      if (resolvedStickerId !== stickerId) changed = true;
+    if (validStickerIds.has(stickerId)) {
+      migrated[stickerId] = Boolean(hasSticker);
       return;
     }
 
@@ -902,7 +936,7 @@ function writeMergedLocalOwnership(userId, ownership, validStickerIds) {
   const preservedUnknown = {};
 
   Object.entries(stored || {}).forEach(([stickerId, hasSticker]) => {
-    if (!validStickerIds.has(stickerId)) {
+    if (!validStickerIds.has(stickerId) && isUuid(stickerId)) {
       preservedUnknown[stickerId] = Boolean(hasSticker);
     }
   });
@@ -1017,6 +1051,18 @@ function calculateProgress(items, filters = {}) {
   };
 }
 
+function countOwned(ownership) {
+  if (ownership instanceof Map) {
+    return [...ownership.values()].filter(Boolean).length;
+  }
+
+  return Object.values(ownership || {}).filter(Boolean).length;
+}
+
+function countCatalogOwned(items) {
+  return (items || []).filter((item) => item.hasSticker).length;
+}
+
 async function requestSupabase(path, options = {}) {
   const session = await getSession();
   if (!session?.access_token) {
@@ -1072,18 +1118,6 @@ function getValidStickerIds(stickers) {
   return new Set(stickers.filter(isOperationalSticker).map((item) => item.id));
 }
 
-function createStickerAliasMap(stickers) {
-  const aliases = new Map();
-
-  stickers.forEach((sticker) => {
-    getStickerAliases(sticker).forEach((alias) => {
-      aliases.set(alias, sticker.id);
-    });
-  });
-
-  return aliases;
-}
-
 function getStickerAliases(sticker) {
   const aliases = new Set([
     sticker.id,
@@ -1114,11 +1148,6 @@ function getStickerAliases(sticker) {
   }
 
   return [...aliases].filter(Boolean);
-}
-
-function resolveStickerId(stickerId, validStickerIds, aliasMap) {
-  if (validStickerIds.has(stickerId)) return stickerId;
-  return aliasMap.get(stickerId) || aliasMap.get(normalizeAlias(stickerId)) || "";
 }
 
 function normalizeAlias(value = "") {
