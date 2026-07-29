@@ -248,7 +248,7 @@ async function tryLoadRemoteData(userId) {
 
 async function loadRemoteData(userId) {
   const [remoteStickers, userStickers, remoteSections] = await Promise.all([
-    requestSupabase("/stickers?select=id,album_id,section_id,code,number,title,subtitle,page,position,rarity,foil,display_order,sections(name)&status=eq.active"),
+    requestSupabase("/stickers?select=id,album_id,section_id,code,number,title,subtitle,page,position,rarity,display_order,sections(name)&status=eq.active"),
     requestSupabase(`/user_stickers?select=sticker_id,has_sticker&user_id=eq.${encodeURIComponent(userId)}`),
     requestSupabase("/sections?select=id,album_id,slug,name,display_order,status&status=eq.active")
   ]);
@@ -303,7 +303,7 @@ function normalizeRemoteSticker(item, sectionsById) {
     is_special: isSpecial,
     is_rare: isRare,
     isRare,
-    foil: Boolean(item.foil),
+    foil: false,
     hasSticker: false
   };
 }
