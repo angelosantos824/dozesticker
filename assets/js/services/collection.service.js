@@ -248,7 +248,7 @@ async function tryLoadRemoteData(userId) {
 
 async function loadRemoteData(userId) {
   const [remoteStickers, userStickers, remoteSections] = await Promise.all([
-    requestSupabase("/stickers?select=id,album_id,section_id,code,number,title,subtitle,page,position,rarity,is_special,foil,display_order,sections(name)&status=eq.active"),
+    requestSupabase("/stickers?select=id,album_id,section_id,code,number,title,subtitle,page,position,rarity,foil,display_order,sections(name)&status=eq.active"),
     requestSupabase(`/user_stickers?select=sticker_id,has_sticker&user_id=eq.${encodeURIComponent(userId)}`),
     requestSupabase("/sections?select=id,album_id,slug,name,display_order,status&status=eq.active")
   ]);
@@ -282,6 +282,8 @@ async function tryReloadRemoteOwnership(userId) {
 
 function normalizeRemoteSticker(item, sectionsById) {
   const section = sectionsById.get(item.section_id);
+  const isSpecial = item.rarity === "rare";
+  const isRare = item.rarity === "rare";
 
   return {
     ...item,
@@ -297,16 +299,16 @@ function normalizeRemoteSticker(item, sectionsById) {
     player_number: null,
     playerNumber: null,
     displayOrder: item.display_order || item.number || 0,
-    isSpecial: Boolean(item.is_special),
-    is_rare: item.rarity === "rare",
-    isRare: item.rarity === "rare",
+    isSpecial,
+    is_special: isSpecial,
+    is_rare: isRare,
+    isRare,
     foil: Boolean(item.foil),
     hasSticker: false
   };
 }
 
 function deriveStickerType(item) {
-  if (item.is_special) return "special";
   if (item.rarity === "rare") return "special";
   return "player";
 }
