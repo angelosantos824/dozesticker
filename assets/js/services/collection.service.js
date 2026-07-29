@@ -186,7 +186,7 @@ async function ensureCatalog() {
   activeCatalogUserId = userId;
 
   const remoteData = await tryLoadRemoteData(userId);
-  const base = remoteData?.stickers?.length === OPERATIONAL_CATALOG_TOTAL
+  const base = remoteData?.stickers?.length > 0
     ? createRemoteCatalog(remoteData)
     : createFallbackCatalog();
 
@@ -201,6 +201,7 @@ async function ensureCatalog() {
 
   writeMergedLocalOwnership(userId, mergedOwnership, validStickerIds);
   catalogCache = mergeOwnership(base.stickers, mergedOwnership);
+  logCatalogSource(catalogCache);
 
   if (userId !== anonymousUserId && remoteData && !recoveredUsers.has(userId)) {
     enqueueLocalRecoveryChanges(userId, validStickerIds, localOwnership, remoteOwnership);
@@ -216,6 +217,7 @@ async function ensureCatalog() {
       );
       writeMergedLocalOwnership(userId, afterSyncOwnership, validStickerIds);
       catalogCache = mergeOwnership(base.stickers, afterSyncOwnership);
+      logCatalogSource(catalogCache);
     }
   }
 
@@ -240,7 +242,7 @@ function createRemoteCatalog(remoteData) {
   sectionsCache = remoteData.sections.slice().sort(compareSections);
 
   return {
-    stickers: remoteData.stickers
+    stickers: mergeLocalAndRemoteStickers(fallbackCatalog.stickers, remoteData.stickers)
   };
 }
 
@@ -316,6 +318,53 @@ function normalizeRemoteSticker(item, sectionsById) {
     foil: false,
     hasSticker: false
   };
+}
+
+function mergeLocalAndRemoteStickers(localStickers, remoteStickers) {
+  const remoteByCode = new Map();
+
+  remoteStickers.forEach((sticker) => {
+    getStickerAliases(sticker).forEach((alias) => {
+      remoteByCode.set(normalizeRemoteCode(alias), sticker);
+    });
+  });
+
+  return localStickers
+    .filter(isOperationalSticker)
+    .map((localSticker) => {
+      const remoteSticker = getStickerAliases(localSticker)
+        .map((alias) => remoteByCode.get(normalizeRemoteCode(alias)))
+        .find(Boolean);
+
+      if (!remoteSticker) {
+        return localSticker;
+      }
+
+      return {
+        ...localSticker,
+        ...remoteSticker,
+        id: remoteSticker.id,
+        code: remoteSticker.code || localSticker.code || localSticker.id,
+        section_name: remoteSticker.section_name || localSticker.section_name,
+        team_code: remoteSticker.team_code || localSticker.team_code,
+        teamCode: remoteSticker.teamCode || localSticker.teamCode,
+        teamName: remoteSticker.teamName || localSticker.teamName,
+        group_code: remoteSticker.group_code || localSticker.group_code,
+        groupCode: remoteSticker.groupCode || localSticker.groupCode,
+        display_order: remoteSticker.display_order || localSticker.display_order,
+        displayOrder: remoteSticker.displayOrder || localSticker.displayOrder
+      };
+    })
+    .sort(compareStickers);
+}
+
+function logCatalogSource(stickers) {
+  console.log("[CATALOG] fonte final", {
+    total: stickers.length,
+    primeiroId: stickers[0]?.id,
+    primeiroCode: stickers[0]?.code,
+    uuidValido: isUuid(stickers[0]?.id || "")
+  });
 }
 
 function deriveStickerType(item) {
@@ -836,6 +885,10 @@ function normalizeAlias(value = "") {
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "");
+}
+
+function normalizeRemoteCode(value = "") {
+  return normalizeAlias(value);
 }
 
 function isUuid(value = "") {
