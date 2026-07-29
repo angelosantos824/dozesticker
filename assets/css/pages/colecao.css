@@ -34,6 +34,8 @@
 
 .sticker-card {
   display: grid;
+  width: 100%;
+  min-width: 0;
   gap: var(--space-3);
   min-height: 15rem;
   border-top: 4px solid var(--status-color, var(--color-primary));
@@ -162,4 +164,26 @@
   background: rgba(239, 68, 68, 0.14);
   color: #fecaca;
   font-weight: 900;
+}
+
+@media (max-width: 560px) {
+  .sticker-card {
+    min-height: 11.5rem;
+    gap: var(--space-2);
+  }
+
+  .sticker-card h2 {
+    font-size: 1rem;
+  }
+
+  .sticker-meta {
+    font-size: 0.82rem;
+  }
+}
+
+@media (max-height: 520px) and (orientation: landscape) and (max-width: 940px) {
+  .sticker-card {
+    min-height: 10rem;
+    padding: var(--space-3);
+  }
 }

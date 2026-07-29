@@ -42,6 +42,7 @@ import {
   updateAdStatus,
   uploadAdImage
 } from "./services/ads.service.js";
+import { SECTION_ORDER_MAP } from "./data/world-cup-2026.catalog.js";
 
 const statusLabels = {
   todas: "Todas",
@@ -1081,7 +1082,7 @@ function buildStickerGroups(items, sections, progressItems) {
         name: section.name || item.section_name || item.teamName || item.team_code || "Secao",
         code: section.team_code || section.code || item.team_code || item.teamCode || item.code,
         kind: section.kind || (item.team_code ? "team" : "special"),
-        displayOrder: Number(section.display_order ?? item.display_order ?? item.number ?? 0),
+        displayOrder: getOfficialSectionOrder(section, item),
         items: []
       });
     }
@@ -1146,8 +1147,18 @@ function createVirtualSection(sticker, sectionId) {
     code: sticker.team_code || sticker.teamCode || sticker.group_code || sticker.groupCode || "",
     team_code: sticker.team_code || sticker.teamCode || "",
     kind: sticker.team_code || sticker.teamCode ? "team" : "special",
-    display_order: sticker.display_order || sticker.number || 0
+    display_order: getOfficialStickerSectionOrder(sticker)
   };
+}
+
+function getOfficialSectionOrder(section, sticker = {}) {
+  const code = String(section.team_code || section.code || sticker.team_code || sticker.teamCode || section.group_code || sticker.group_code || sticker.groupCode || "").toUpperCase();
+  return SECTION_ORDER_MAP.get(code) || Number(section.display_order ?? sticker.display_order ?? sticker.displayOrder ?? sticker.number ?? 999);
+}
+
+function getOfficialStickerSectionOrder(sticker = {}) {
+  const code = String(sticker.team_code || sticker.teamCode || sticker.group_code || sticker.groupCode || "").toUpperCase();
+  return SECTION_ORDER_MAP.get(code) || Number(sticker.display_order ?? sticker.displayOrder ?? sticker.number ?? 999);
 }
 
 function compareStickers(a, b) {

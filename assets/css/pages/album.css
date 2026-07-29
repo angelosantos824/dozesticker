@@ -1,5 +1,7 @@
 .album-page {
   display: grid;
+  width: 100%;
+  min-width: 0;
   gap: var(--space-4);
 }
 
@@ -41,6 +43,7 @@
   grid-template-columns: 15rem minmax(0, 1fr);
   gap: var(--space-4);
   align-items: start;
+  min-width: 0;
 }
 
 .album-nav {
@@ -129,6 +132,8 @@
 
 .album-grid {
   display: block;
+  width: 100%;
+  min-width: 0;
 }
 
 .album-grid .sticker-section-grid {
@@ -139,6 +144,8 @@
 .album-sticker {
   display: grid;
   grid-template-rows: auto 1fr auto;
+  width: 100%;
+  min-width: 0;
   gap: var(--space-3);
   min-height: 17.5rem;
   border: 1px solid var(--color-border);
@@ -258,7 +265,7 @@
   }
 
   .album-grid .sticker-section-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
   }
 }
 
@@ -312,6 +319,7 @@
 
   .album-grid .sticker-section-grid {
     gap: var(--space-2);
+    grid-template-columns: 1fr;
   }
 
   .album-sticker {
@@ -340,12 +348,36 @@
 
 @media (max-width: 360px) {
   .album-grid .sticker-section-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
   }
 
   .album-sticker-code,
   .album-sticker h3,
   .album-sticker p {
     overflow-wrap: anywhere;
+  }
+}
+
+@media (max-height: 520px) and (orientation: landscape) and (max-width: 940px) {
+  .album-grid .sticker-section-grid {
+    grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+    gap: var(--space-2);
+  }
+
+  .album-sticker {
+    min-height: 12rem;
+    padding: var(--space-2);
+  }
+
+  .album-sticker-frame {
+    min-height: 4.2rem;
+  }
+
+  .album-sticker h3 {
+    font-size: 0.82rem;
+  }
+
+  .album-sticker p {
+    display: none;
   }
 }

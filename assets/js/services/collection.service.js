@@ -59,9 +59,11 @@ export async function getAlbum(albumIdOrSlug = "world-cup-2026") {
 
 export async function getSections(albumId = "world-cup-2026") {
   await ensureCatalog();
-  return sectionsCache
+  const sections = sectionsCache
     .filter((section) => section.album_id === albumId)
     .sort(compareSections);
+
+  return sections.length ? sections : sectionsCache.slice().sort(compareSections);
 }
 
 export async function getStickers(filters = {}) {
@@ -388,6 +390,7 @@ function enrichRemoteSection(section) {
 
   return {
     ...section,
+    album_id: fallbackSection?.album_id || section.album_id,
     code: fallbackSection?.code || section.slug?.toUpperCase() || "",
     country_code: fallbackSection?.country_code || "",
     team_code: fallbackSection?.team_code || "",
