@@ -178,7 +178,7 @@ async function ensureCatalog() {
 
   activeUserId = userId;
 
-  if (if (isSupabaseConfigured()) {
+  if (isSupabaseConfigured()) {
   try {
     const remoteCatalog = await loadRemoteCatalog(userId);
 
