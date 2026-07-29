@@ -1,5 +1,7 @@
 import { getSession, signOut } from "../services/auth.service.js";
 
+const sidebarStateKey = "dozesticker:sidebar-collapsed";
+
 const privateItems = [
   { id: "dashboard", label: "Dashboard", href: "dashboard.html", icon: "DB", mobile: true },
   { id: "album", label: "Album", href: "album.html", icon: "AL", mobile: true },
@@ -25,15 +27,18 @@ export async function renderNavigation(currentPage) {
     : publicItems;
 
   if (sidebar) {
+    const collapsed = readSidebarCollapsed();
+    document.body.classList.toggle("is-sidebar-collapsed", collapsed);
     sidebar.innerHTML = `
-      <a class="brand" href="${session ? "dashboard.html" : "index.html"}" aria-label="DOZESTICKER">
-        <img src="assets/images/brand/dozedev-symbol.png" alt="" width="38" height="38">
-        <span>DOZESTICKER <small>by DOZEDEV</small></span>
-      </a>
+      <div class="sidebar-brand-row">
+        ${brandLink(session)}
+        <button class="sidebar-toggle" type="button" data-sidebar-toggle aria-label="Ocultar menu lateral">&lt;&lt;&lt;</button>
+      </div>
       <nav class="nav-list" aria-label="Navegacao principal">
         ${navItems.map((item) => navLink(item, currentPage, "nav-link")).join("")}
       </nav>
     `;
+    renderCollapsedBrand(session);
   }
 
   if (mobileNav) {
@@ -45,6 +50,14 @@ export async function renderNavigation(currentPage) {
       event.preventDefault();
       await signOut();
       window.location.href = "login.html";
+    });
+  });
+
+  document.querySelectorAll("[data-sidebar-toggle]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const collapsed = !document.body.classList.contains("is-sidebar-collapsed");
+      writeSidebarCollapsed(collapsed);
+      document.body.classList.toggle("is-sidebar-collapsed", collapsed);
     });
   });
 }
@@ -65,4 +78,36 @@ function navLink(item, currentPage, className) {
       <span>${item.label}</span>
     </a>
   `;
+}
+
+function brandLink(session) {
+  return `
+    <a class="brand" href="${session ? "dashboard.html" : "index.html"}" aria-label="DOZESTICKER">
+      <img src="assets/images/brand/dozedev-symbol.png" alt="" width="38" height="38">
+      <span>DOZESTICKER <small>by DOZEDEV</small></span>
+    </a>
+  `;
+}
+
+function renderCollapsedBrand(session) {
+  let card = document.querySelector("[data-collapsed-brand]");
+  if (!card) {
+    card = document.createElement("div");
+    card.dataset.collapsedBrand = "true";
+    card.className = "collapsed-brand-card";
+    document.body.append(card);
+  }
+
+  card.innerHTML = `
+    ${brandLink(session)}
+    <button class="sidebar-toggle" type="button" data-sidebar-toggle aria-label="Mostrar menu lateral">&gt;&gt;&gt;</button>
+  `;
+}
+
+function readSidebarCollapsed() {
+  return localStorage.getItem(sidebarStateKey) === "true";
+}
+
+function writeSidebarCollapsed(value) {
+  localStorage.setItem(sidebarStateKey, String(value));
 }

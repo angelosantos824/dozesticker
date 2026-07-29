@@ -12,7 +12,7 @@ export async function getActiveAds({ force = false } = {}) {
     return activeAdsCache;
   }
 
-  const query = "/ads?select=id,title,description,image_url,cta_label,destination_url,whatsapp,phone,address,latitude,longitude,google_maps_url,apple_maps_url,display_order,starts_at,ends_at&status=eq.active&order=display_order.asc";
+  const query = "/ads?select=id,title,description,image_url,cta_label,destination_url,whatsapp,phone,address,latitude,longitude,google_maps_url,apple_maps_url,placement,display_order,starts_at,ends_at&status=eq.active&order=display_order.asc";
   const ads = await requestSupabase(query, { publicRead: true }).catch(() => []);
   activeAdsCache = ads.filter(isActiveByPeriod).map(normalizeAd);
   activeAdsCacheAt = Date.now();
@@ -144,6 +144,7 @@ function sanitizeAdPayload(ad) {
     longitude: toNullableNumber(ad.longitude),
     google_maps_url: sanitizeUrl(ad.google_maps_url) || null,
     apple_maps_url: sanitizeUrl(ad.apple_maps_url) || null,
+    placement: ["public_home", "trade_event", "dashboard"].includes(ad.placement) ? ad.placement : "public_home",
     status: ["draft", "active", "inactive", "expired"].includes(ad.status) ? ad.status : "draft",
     display_order: Number(ad.display_order || 0),
     starts_at: ad.starts_at || null,

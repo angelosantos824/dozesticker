@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS dozesticker.ads (
   longitude numeric,
   google_maps_url text,
   apple_maps_url text,
+  placement text NOT NULL DEFAULT 'public_home',
   status text NOT NULL DEFAULT 'draft',
   display_order integer NOT NULL DEFAULT 0,
   starts_at timestamptz,
@@ -22,6 +23,7 @@ CREATE TABLE IF NOT EXISTS dozesticker.ads (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT ads_title_not_blank CHECK (length(btrim(title)) > 0),
+  CONSTRAINT ads_placement_check CHECK (placement IN ('public_home', 'trade_event', 'dashboard')),
   CONSTRAINT ads_status_check CHECK (status IN ('draft', 'active', 'inactive', 'expired')),
   CONSTRAINT ads_period_check CHECK (ends_at IS NULL OR starts_at IS NULL OR ends_at >= starts_at)
 );
@@ -30,7 +32,7 @@ COMMENT ON TABLE dozesticker.ads IS
   'Public partner announcements for DOZESTICKER, administered only by platform admins.';
 
 CREATE INDEX IF NOT EXISTS ads_active_order_idx
-  ON dozesticker.ads (status, display_order, starts_at, ends_at);
+  ON dozesticker.ads (status, placement, display_order, starts_at, ends_at);
 
 DROP TRIGGER IF EXISTS ads_touch_updated_at ON dozesticker.ads;
 CREATE TRIGGER ads_touch_updated_at

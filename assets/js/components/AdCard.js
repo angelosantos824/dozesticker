@@ -25,21 +25,44 @@ export function AdCard(ad) {
   `;
 }
 
-export function AdCarousel(ads) {
+export function AdCarousel(ads, options = {}) {
   if (!ads.length) return "";
+  const slides = chunkAds(ads, 2);
+  const eyebrow = options.eyebrow || "Parceiros";
+  const title = options.title || "Anuncios e parceiros";
+
   return `
-    <section class="ads-section" aria-label="Anuncios e parceiros">
+    <section class="ads-section" aria-label="${escapeAttribute(title)}">
       <div class="section-heading">
         <div>
-          <p class="eyebrow">Parceiros</p>
-          <h2>Anuncios e parceiros</h2>
+          <p class="eyebrow">${escapeHtml(eyebrow)}</p>
+          <h2>${escapeHtml(title)}</h2>
         </div>
       </div>
-      <div class="ad-carousel">
-        ${ads.map(AdCard).join("")}
+      <div class="ad-flash" data-ad-flash>
+        <div class="ad-flash-viewport">
+          ${slides.map((slide, index) => `
+            <div class="ad-flash-slide ${index === 0 ? "is-active" : ""}" data-ad-slide="${index}" aria-hidden="${index === 0 ? "false" : "true"}">
+              ${slide.map(AdCard).join("")}
+            </div>
+          `).join("")}
+        </div>
+        ${slides.length > 1 ? `
+          <div class="ad-flash-dots" aria-label="Eventos em destaque">
+            ${slides.map((_, index) => `<button type="button" data-ad-dot="${index}" aria-label="Mostrar grupo ${index + 1}" aria-pressed="${index === 0}"></button>`).join("")}
+          </div>
+        ` : ""}
       </div>
     </section>
   `;
+}
+
+function chunkAds(ads, size) {
+  const chunks = [];
+  for (let index = 0; index < ads.length; index += size) {
+    chunks.push(ads.slice(index, index + size));
+  }
+  return chunks;
 }
 
 export function openMapMenu(ad) {

@@ -123,12 +123,59 @@ function renderPublicHome() {
 
   getActiveAds()
     .then((ads) => {
-      adsArea.innerHTML = AdCarousel(ads);
-      bindAdMapActions(adsArea, ads);
+      const eventAds = ads.filter((ad) => ad.placement === "trade_event");
+      adsArea.innerHTML = AdCarousel(eventAds, {
+        eyebrow: "Eventos",
+        title: "Eventos de troca"
+      });
+      bindAdMapActions(adsArea, eventAds);
+      bindAdFlash(adsArea);
     })
     .catch(() => {
       adsArea.innerHTML = "";
     });
+}
+
+function bindAdFlash(root) {
+  const flash = root.querySelector("[data-ad-flash]");
+  if (!flash) return;
+
+  const slides = [...flash.querySelectorAll("[data-ad-slide]")];
+  const dots = [...flash.querySelectorAll("[data-ad-dot]")];
+  if (slides.length <= 1) return;
+
+  let activeIndex = 0;
+  let timer = null;
+
+  const showSlide = (index) => {
+    activeIndex = (index + slides.length) % slides.length;
+    slides.forEach((slide, slideIndex) => {
+      const isActive = slideIndex === activeIndex;
+      slide.classList.toggle("is-active", isActive);
+      slide.setAttribute("aria-hidden", String(!isActive));
+    });
+    dots.forEach((dot, dotIndex) => {
+      dot.setAttribute("aria-pressed", String(dotIndex === activeIndex));
+    });
+  };
+
+  const start = () => {
+    timer = window.setInterval(() => showSlide(activeIndex + 1), 3600);
+  };
+
+  const restart = () => {
+    if (timer) window.clearInterval(timer);
+    start();
+  };
+
+  dots.forEach((dot) => {
+    dot.addEventListener("click", () => {
+      showSlide(Number(dot.dataset.adDot || 0));
+      restart();
+    });
+  });
+
+  start();
 }
 
 async function renderAdsAdmin() {
@@ -163,6 +210,15 @@ async function renderAdsAdmin() {
 
     try {
       if (action === "new") editingAd = null;
+      if (action === "new-trade-event") {
+        editingAd = {
+          placement: "trade_event",
+          title: "Evento de troca",
+          cta_label: "Participar",
+          status: "draft",
+          display_order: 0
+        };
+      }
       if (action === "edit") editingAd = ad;
       if (action === "duplicate") editingAd = { ...ad, id: "", title: `${ad.title} copia`, status: "draft" };
       if (action === "activate") await updateAdStatus(id, "active");
@@ -190,6 +246,7 @@ async function renderAdsAdmin() {
       const imageUrl = file?.size ? await uploadAdImage(file) : formData.get("image_url");
       await saveAd({
         id: formData.get("id"),
+        placement: formData.get("placement"),
         title: formData.get("title"),
         description: formData.get("description"),
         image_url: imageUrl,
@@ -919,7 +976,10 @@ function adsAdminTemplate(ads, editingAd) {
         <p class="eyebrow">Administracao</p>
         <h1>Anuncios</h1>
       </div>
-      <button class="button button-primary" type="button" data-ad-action="new">Novo anuncio</button>
+      <div class="actions-row">
+        <button class="button button-primary" type="button" data-ad-action="new-trade-event">Novo evento de troca</button>
+        <button class="button button-secondary" type="button" data-ad-action="new">Novo anuncio</button>
+      </div>
     </header>
 
     <section class="admin-ads-grid">
@@ -928,9 +988,19 @@ function adsAdminTemplate(ads, editingAd) {
         <div class="section-heading">
           <div>
             <p class="eyebrow">${ad.id ? "Editar" : "Novo"}</p>
-            <h2>Anuncio</h2>
+            <h2>${ad.placement === "trade_event" ? "Evento de troca" : "Anuncio"}</h2>
           </div>
         </div>
+        <label class="field">
+          <span>Local do anuncio</span>
+          <select name="placement">
+            ${[
+              ["public_home", "Pagina publica"],
+              ["trade_event", "Evento de troca"],
+              ["dashboard", "Dashboard"]
+            ].map(([value, label]) => `<option value="${value}" ${value === (ad.placement || "public_home") ? "selected" : ""}>${label}</option>`).join("")}
+          </select>
+        </label>
         ${adField("Titulo", "title", ad.title, "text", true)}
         <label class="field"><span>Descricao</span><textarea name="description">${escapeHtml(ad.description || "")}</textarea></label>
         ${adField("Imagem atual", "image_url", ad.image_url, "url")}
@@ -984,7 +1054,7 @@ function adminAdRow(ad) {
       <div class="admin-ad-thumb">${ad.image_url ? `<img src="${escapeAttribute(ad.image_url)}" alt="" loading="lazy">` : "12"}</div>
       <div>
         <h2>${escapeHtml(ad.title)}</h2>
-        <p class="muted">${escapeHtml(ad.status)} · ordem ${Number(ad.display_order || 0)}</p>
+        <p class="muted">${placementLabel(ad.placement)} · ${escapeHtml(ad.status)} · ordem ${Number(ad.display_order || 0)}</p>
         <p class="muted">${formatDate(ad.starts_at)} - ${formatDate(ad.ends_at)}</p>
       </div>
       <div class="admin-ad-actions">
@@ -996,6 +1066,15 @@ function adminAdRow(ad) {
       </div>
     </article>
   `;
+}
+
+function placementLabel(placement) {
+  const labels = {
+    public_home: "Pagina publica",
+    trade_event: "Evento de troca",
+    dashboard: "Dashboard"
+  };
+  return labels[placement] || "Pagina publica";
 }
 
 function bindAdMapActions(root, ads) {

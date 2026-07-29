@@ -19,6 +19,14 @@ body {
     display: none;
   }
 
+  .collapsed-brand-card {
+    display: none;
+  }
+
+  .is-sidebar-collapsed .collapsed-brand-card {
+    display: none;
+  }
+
   .main-content {
     margin-left: 0;
     padding:
@@ -26,6 +34,10 @@ body {
       max(var(--space-4), env(safe-area-inset-right))
       calc(var(--bottom-nav-height) + var(--space-5) + env(safe-area-inset-bottom))
       max(var(--space-4), env(safe-area-inset-left));
+  }
+
+  .is-sidebar-collapsed .main-content {
+    padding-top: var(--space-5);
   }
 
   .mobile-nav {
@@ -59,13 +71,12 @@ body {
   }
 
   .hero-panel {
-    min-height: auto;
+    min-height: 72vh;
     grid-template-columns: 1fr;
   }
 
-  .stadium-preview,
-  .stadium-preview img {
-    min-height: 18rem;
+  .hero-glass {
+    max-width: none;
   }
 
   .toolbar {
@@ -125,9 +136,8 @@ body {
     padding: var(--space-4);
   }
 
-  .stadium-preview,
-  .stadium-preview img {
-    min-height: 15.5rem;
+  .hero-panel {
+    min-height: 68vh;
   }
 
   .toast-region {
@@ -193,15 +203,9 @@ body {
     font-size: 0.68rem;
   }
 
-  .ad-carousel {
-    display: flex;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-  }
-
-  .ad-card {
-    flex: 0 0 100%;
-    scroll-snap-align: start;
+  .ad-flash-slide,
+  .ad-flash-slide.is-active {
+    grid-template-columns: 1fr;
   }
 
   .ad-actions .button,
