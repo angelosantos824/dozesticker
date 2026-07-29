@@ -404,13 +404,18 @@ function mergeOwnershipPriority(validStickerIds, pendingOwnership, localOwnershi
       return;
     }
 
-    if (Object.prototype.hasOwnProperty.call(localOwnership, stickerId)) {
-      merged[stickerId] = Boolean(localOwnership[stickerId]);
+    if (Object.prototype.hasOwnProperty.call(localOwnership, stickerId) && Boolean(localOwnership[stickerId])) {
+      merged[stickerId] = true;
       return;
     }
 
     if (remoteOwnership.has(stickerId)) {
       merged[stickerId] = Boolean(remoteOwnership.get(stickerId));
+      return;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(localOwnership, stickerId)) {
+      merged[stickerId] = false;
       return;
     }
 
@@ -425,12 +430,19 @@ function enqueueLocalRecoveryChanges(userId, validStickerIds, localOwnership, re
     if (!validStickerIds.has(stickerId)) return;
 
     const localValue = Boolean(hasSticker);
-    const remoteHasValue = remoteOwnership.has(stickerId);
-    const remoteValue = Boolean(remoteOwnership.get(stickerId));
 
-    if (localValue || (remoteHasValue && localValue !== remoteValue)) {
-      enqueueChange(createQueueChange(userId, stickerId, localValue));
+    console.log("[RECOVERY]", {
+      uuid: stickerId,
+      hasSticker: localValue,
+      origem: "localStorage"
+    });
+
+    if (!localValue) {
+      console.warn("[RECOVERY] ignorado false", stickerId);
+      return;
     }
+
+    enqueueChange(createQueueChange(userId, stickerId, true));
   });
 }
 
