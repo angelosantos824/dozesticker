@@ -1,4 +1,4 @@
-const cacheName = "dozesticker-v0.6.7-auth-cors-message";
+const cacheName = "dozesticker-v0.6.8-admin-user-stats";
 const appShell = [
   "./",
   "./index.html",
@@ -45,6 +45,7 @@ const appShell = [
   "./assets/js/services/auth.service.js",
   "./assets/js/services/collection.service.js",
   "./assets/js/services/ads.service.js",
+  "./assets/js/services/admin.service.js",
   "./assets/js/services/supabase-client.js",
   "./assets/images/logo/icon.png",
   "./assets/images/brand/dozedev-symbol.png",

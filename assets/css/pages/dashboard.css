@@ -11,6 +11,99 @@
   gap: var(--space-4);
 }
 
+.admin-overview {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+  border: 1px solid rgba(181, 92, 255, 0.35);
+  border-radius: var(--radius-lg);
+  background: rgba(16, 11, 28, 0.84);
+  padding: var(--space-5);
+  box-shadow: 0 0 18px rgba(168, 85, 247, 0.12);
+}
+
+.admin-stats-grid {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-4);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.admin-stat-card {
+  display: grid;
+  min-width: 0;
+  min-height: 7rem;
+  align-content: space-between;
+  gap: var(--space-3);
+  border: 1px solid rgba(181, 92, 255, 0.3);
+  border-radius: var(--radius-md);
+  background: rgba(248, 250, 252, 0.06);
+  padding: var(--space-4);
+}
+
+.admin-stat-card--primary {
+  border-color: rgba(181, 92, 255, 0.62);
+  background: linear-gradient(135deg, rgba(139, 61, 255, 0.24), rgba(59, 130, 246, 0.12));
+}
+
+.admin-stat-card span {
+  min-width: 0;
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  font-weight: 850;
+  overflow-wrap: anywhere;
+}
+
+.admin-stat-card strong {
+  color: var(--color-white);
+  font-size: 2rem;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.admin-stat-card--primary strong {
+  color: var(--color-primary-soft);
+  font-size: 2.7rem;
+}
+
+.admin-status,
+.admin-last-registration {
+  min-width: 0;
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.admin-overview.is-loading .admin-stat-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-overview.is-loading .admin-stat-card::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+  animation: admin-skeleton 1.2s linear infinite;
+}
+
+.admin-overview.has-error .admin-status {
+  color: var(--color-danger);
+}
+
+@keyframes admin-skeleton {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(100%);
+  }
+}
+
 .progress-surface {
   display: grid;
   align-content: start;
@@ -58,6 +151,19 @@
   .dashboard-grid {
     grid-template-columns: 1fr;
   }
+
+  .admin-overview {
+    padding: var(--space-4);
+  }
+
+  .admin-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+
+  .admin-stat-card--primary {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 480px) {
@@ -72,5 +178,24 @@
 
   .stat-value {
     font-size: 1.65rem;
+  }
+
+  .admin-stat-card {
+    min-height: 6rem;
+    padding: var(--space-3);
+  }
+
+  .admin-stat-card strong {
+    font-size: 1.6rem;
+  }
+
+  .admin-stat-card--primary strong {
+    font-size: 2.3rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .admin-stats-grid {
+    grid-template-columns: 1fr;
   }
 }

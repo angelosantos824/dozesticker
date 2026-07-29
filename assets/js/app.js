@@ -42,6 +42,10 @@ import {
   updateAdStatus,
   uploadAdImage
 } from "./services/ads.service.js";
+import {
+  getAdminUserStats,
+  isPlatformAdmin
+} from "./services/admin.service.js";
 import { SECTION_ORDER_MAP } from "./data/world-cup-2026.catalog.js";
 
 const statusLabels = {
@@ -548,6 +552,70 @@ async function renderDashboard() {
       <strong>${value}</strong>
     </div>
   `).join("");
+
+  await renderAdminOverview();
+}
+
+async function renderAdminOverview() {
+  const statsGrid = document.querySelector("[data-dashboard-stats]");
+  if (!statsGrid) return;
+
+  const isAdmin = await isPlatformAdmin();
+  if (!isAdmin) return;
+
+  statsGrid.insertAdjacentHTML("afterend", adminOverviewTemplate());
+  const overview = document.querySelector("[data-admin-overview]");
+  const status = overview.querySelector("[data-admin-status]");
+
+  try {
+    const stats = await getAdminUserStats();
+    overview.querySelector("[data-total-users]").textContent = formatNumber(stats.totalUsers);
+    overview.querySelector("[data-users-today]").textContent = formatNumber(stats.registeredToday);
+    overview.querySelector("[data-users-seven-days]").textContent = formatNumber(stats.registeredLast7Days);
+    overview.querySelector("[data-users-thirty-days]").textContent = formatNumber(stats.registeredLast30Days);
+    overview.querySelector("[data-last-registration]").textContent = stats.lastRegistrationAt
+      ? `Ultimo cadastro: ${formatDateTime(stats.lastRegistrationAt)}`
+      : "0 utilizadores cadastrados";
+    status.textContent = "";
+    overview.classList.remove("is-loading");
+  } catch (error) {
+    overview.classList.remove("is-loading");
+    overview.classList.add("has-error");
+    status.textContent = "Nao foi possivel carregar as estatisticas administrativas.";
+  }
+}
+
+function adminOverviewTemplate() {
+  return `
+    <section class="admin-overview is-loading" data-admin-overview>
+      <header class="section-heading">
+        <div>
+          <p class="eyebrow">Super Admin</p>
+          <h2>Visao administrativa</h2>
+        </div>
+      </header>
+      <p class="admin-status" data-admin-status>Carregando estatisticas...</p>
+      <div class="admin-stats-grid">
+        <article class="admin-stat-card admin-stat-card--primary">
+          <span>Utilizadores cadastrados</span>
+          <strong data-total-users>0</strong>
+        </article>
+        <article class="admin-stat-card">
+          <span>Cadastros hoje</span>
+          <strong data-users-today>0</strong>
+        </article>
+        <article class="admin-stat-card">
+          <span>Ultimos 7 dias</span>
+          <strong data-users-seven-days>0</strong>
+        </article>
+        <article class="admin-stat-card">
+          <span>Ultimos 30 dias</span>
+          <strong data-users-thirty-days>0</strong>
+        </article>
+      </div>
+      <p class="admin-last-registration" data-last-registration></p>
+    </section>
+  `;
 }
 
 async function renderCollection() {
@@ -1367,6 +1435,18 @@ function setFormMessage(element, message, tone = "neutral") {
 function formatDate(value) {
   if (!value) return "-";
   return new Intl.DateTimeFormat("pt-BR", { dateStyle: "long" }).format(new Date(value));
+}
+
+function formatDateTime(value) {
+  if (!value) return "-";
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short"
+  }).format(new Date(value));
+}
+
+function formatNumber(value) {
+  return new Intl.NumberFormat("pt-BR").format(Number(value || 0));
 }
 
 function getInitials(value = "") {
