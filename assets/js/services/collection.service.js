@@ -85,6 +85,15 @@ export async function getSectionProgress(sectionId) {
 }
 
 export async function toggleSticker(stickerId, nextValue) {
+  auditOwnershipFlow("toggleSticker", {
+    stickerId,
+    syncStickerId: isUuid(stickerId) ? stickerId : ""
+  });
+
+  if (!isUuid(stickerId)) {
+    throw new Error(`stickerId precisa ser UUID. Valor recebido: ${stickerId}`);
+  }
+
   const userId = await requireCollectionUserId();
   const catalog = await ensureCatalog();
   const validStickerIds = getValidStickerIds(catalog);
@@ -694,6 +703,11 @@ async function runSyncPendingChanges() {
 }
 
 async function persistChange(userId, stickerId, hasSticker) {
+  auditOwnershipFlow("updateStickerOwnership", {
+    stickerId,
+    syncStickerId: isUuid(stickerId) ? stickerId : ""
+  });
+
   if (!navigator.onLine || !isSupabaseConfigured() || !isUuid(stickerId)) {
     const motivo = !navigator.onLine
       ? "navegador offline"
@@ -715,6 +729,11 @@ async function persistChange(userId, stickerId, hasSticker) {
 }
 
 async function upsertRemoteOwnership(userId, stickerId, hasSticker) {
+  auditOwnershipFlow("markSticker/sync", {
+    stickerId,
+    syncStickerId: stickerId
+  });
+
   if (!isUuid(stickerId)) {
     console.log("[SYNC] sincronização cancelada", `sticker_id precisa ser UUID: ${stickerId}`);
     throw new Error(`sticker_id precisa ser UUID. Valor recebido: ${stickerId}`);
@@ -1115,7 +1134,7 @@ function normalizeAlbums(albums) {
 }
 
 function getValidStickerIds(stickers) {
-  return new Set(stickers.filter(isOperationalSticker).map((item) => item.id));
+  return new Set(stickers.filter(isOperationalSticker).map((item) => item.id).filter(isUuid));
 }
 
 function getStickerAliases(sticker) {
@@ -1164,6 +1183,23 @@ function normalizeRemoteCode(value = "") {
 
 function isUuid(value = "") {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value));
+}
+
+function auditOwnershipFlow(etapa, { stickerId, syncStickerId }) {
+  if (!isLegacyStickerId(stickerId) && !isLegacyStickerId(syncStickerId)) return;
+
+  console.warn("[ALBUM AUDIT]", {
+    etapa,
+    idRecebido: stickerId,
+    idArmazenadoNoDataset: "",
+    idEnviadoParaToggle: stickerId,
+    idEnviadoParaSync: syncStickerId || "",
+    motivo: "ID legado bloqueado no servico de colecao"
+  });
+}
+
+function isLegacyStickerId(value = "") {
+  return Boolean(value && !isUuid(value));
 }
 
 function compareSections(a, b) {
