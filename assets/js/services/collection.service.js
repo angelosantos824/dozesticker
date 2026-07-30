@@ -85,17 +85,20 @@ export async function getSectionProgress(sectionId) {
 }
 
 export async function toggleSticker(stickerId, nextValue) {
-  auditOwnershipFlow("toggleSticker", {
-    stickerId,
-    syncStickerId: isUuid(stickerId) ? stickerId : ""
-  });
-
   if (!isUuid(stickerId)) {
+    console.error("[CATALOG] ID de figurinha nao e UUID", { stickerId });
     throw new Error(`stickerId precisa ser UUID. Valor recebido: ${stickerId}`);
   }
 
   const userId = await requireCollectionUserId();
   const catalog = await ensureCatalog();
+  const sticker = catalog.find((item) => item.id === stickerId);
+
+  if (!sticker || sticker.catalogSource !== "remote") {
+    console.warn("[CATALOG] usando catalogo fallback", { stickerId });
+    throw new Error("Catalogo temporario em uso. Tente novamente quando o catalogo oficial estiver carregado.");
+  }
+
   const validStickerIds = getValidStickerIds(catalog);
 
   if (!validStickerIds.has(stickerId)) {
@@ -160,7 +163,7 @@ export function getConnectionState() {
 }
 
 export function getServiceMode() {
-  return isSupabaseConfigured() ? activeCatalogSource : "local";
+  return activeCatalogSource;
 }
 
 export function getRecentSearches() {
@@ -208,7 +211,9 @@ export function sanitizeStoredCollection(validStickerIds, userId = activeUserId)
 
 async function ensureCatalog() {
   const userId = await getCollectionUserId();
-  if (catalogCache && activeCatalogUserId === userId) return catalogCache;
+  if (catalogCache && activeCatalogUserId === userId && !(activeCatalogSource === "fallback" && canUseRemote(userId))) {
+    return catalogCache;
+  }
 
   activeCatalogUserId = userId;
 
@@ -216,6 +221,12 @@ async function ensureCatalog() {
   const base = remoteData?.stickers?.length > 0
     ? createRemoteCatalog(remoteData)
     : createFallbackCatalog();
+
+  if (base.catalogSource === "fallback") {
+    catalogCache = base.stickers;
+    setupRealtimeSubscription(userId);
+    return catalogCache;
+  }
 
   const validStickerIds = getValidStickerIds(base.stickers);
   const localOwnership = migrateStoredOwnership(userId, validStickerIds);
@@ -227,7 +238,6 @@ async function ensureCatalog() {
 
   writeMergedLocalOwnership(userId, mergedOwnership, validStickerIds);
   catalogCache = mergeOwnership(base.stickers, mergedOwnership);
-  logCatalogSource(catalogCache);
   setupRealtimeSubscription(userId);
 
   if (userId !== anonymousUserId && remoteData && !recoveredUsers.has(userId)) {
@@ -243,23 +253,31 @@ async function ensureCatalog() {
 }
 
 function createFallbackCatalog() {
-  activeCatalogSource = isSupabaseConfigured() ? "fallback" : "local";
+  activeCatalogSource = "fallback";
+  console.warn("[CATALOG] usando catalogo fallback");
   collectionsCache = fallbackCatalog.collections;
   albumsCache = normalizeAlbums(fallbackCatalog.albums);
   sectionsCache = normalizeVisibleSections(fallbackCatalog.sections);
 
   return {
-    stickers: fallbackCatalog.stickers.filter(isOperationalSticker)
+    catalogSource: "fallback",
+    stickers: fallbackCatalog.stickers
+      .filter(isOperationalSticker)
+      .map((sticker) => ({
+        ...sticker,
+        catalogSource: "fallback"
+      }))
   };
 }
 
 function createRemoteCatalog(remoteData) {
-  activeCatalogSource = "supabase";
+  activeCatalogSource = "remote";
   collectionsCache = fallbackCatalog.collections;
   albumsCache = normalizeAlbums(fallbackCatalog.albums);
   sectionsCache = normalizeVisibleSections(remoteData.sections);
 
   return {
+    catalogSource: "remote",
     stickers: mergeLocalAndRemoteStickers(fallbackCatalog.stickers, remoteData.stickers)
   };
 }
@@ -285,8 +303,10 @@ async function loadRemoteData(userId) {
   const sections = normalizeVisibleSections(remoteSections.map(enrichRemoteSection));
   const sectionsById = new Map(sections.map((section) => [section.id, section]));
   const ownership = new Map(userStickers.map((item) => [item.sticker_id, Boolean(item.has_sticker)]));
-  const stickers = remoteStickers
-    .map((item) => normalizeRemoteSticker(item, sectionsById))
+  const normalizedStickers = remoteStickers
+    .map((item) => normalizeRemoteSticker(item, sectionsById));
+
+  const stickers = normalizedStickers
     .filter(isOperationalSticker)
     .sort(compareStickers);
 
@@ -334,55 +354,37 @@ function normalizeRemoteSticker(item, sectionsById) {
     is_rare: isRare,
     isRare,
     foil: false,
-    hasSticker: false
+    hasSticker: false,
+    catalogSource: "remote"
   };
 }
 
 function mergeLocalAndRemoteStickers(localStickers, remoteStickers) {
-  const remoteByCode = new Map();
+  const localByCode = buildUniqueStickerCodeMap(localStickers, "fallback");
+  const remoteByCode = buildUniqueStickerCodeMap(remoteStickers, "remote");
 
-  remoteStickers.forEach((sticker) => {
-    getStickerAliases(sticker).forEach((alias) => {
-      remoteByCode.set(normalizeRemoteCode(alias), sticker);
-    });
-  });
-
-  return localStickers
-    .filter(isOperationalSticker)
-    .map((localSticker) => {
-      const remoteSticker = getStickerAliases(localSticker)
-        .map((alias) => remoteByCode.get(normalizeRemoteCode(alias)))
-        .find(Boolean);
-
-      if (!remoteSticker) {
-        return localSticker;
-      }
-
+  const mergedStickers = remoteStickers
+    .filter((remoteSticker) => remoteByCode.get(normalizeStickerCode(remoteSticker.code)) === remoteSticker)
+    .map((remoteSticker) => {
+      const localSticker = localByCode.get(normalizeStickerCode(remoteSticker.code));
       return {
         ...localSticker,
         ...remoteSticker,
         id: remoteSticker.id,
-        code: remoteSticker.code || localSticker.code || localSticker.id,
-        section_name: remoteSticker.section_name || localSticker.section_name,
-        team_code: remoteSticker.team_code || localSticker.team_code,
-        teamCode: remoteSticker.teamCode || localSticker.teamCode,
-        teamName: remoteSticker.teamName || localSticker.teamName,
-        group_code: remoteSticker.group_code || localSticker.group_code,
-        groupCode: remoteSticker.groupCode || localSticker.groupCode,
-        display_order: remoteSticker.display_order || localSticker.display_order,
-        displayOrder: remoteSticker.displayOrder || localSticker.displayOrder
+        code: remoteSticker.code,
+        section_name: remoteSticker.section_name || localSticker?.section_name,
+        team_code: remoteSticker.team_code || localSticker?.team_code,
+        teamCode: remoteSticker.teamCode || localSticker?.teamCode,
+        teamName: remoteSticker.teamName || localSticker?.teamName,
+        group_code: remoteSticker.group_code || localSticker?.group_code,
+        groupCode: remoteSticker.groupCode || localSticker?.groupCode,
+        display_order: remoteSticker.display_order || localSticker?.display_order,
+        displayOrder: remoteSticker.displayOrder || localSticker?.displayOrder,
+        catalogSource: "remote"
       };
-    })
-    .sort(compareStickers);
-}
+    });
 
-function logCatalogSource(stickers) {
-  console.log("[CATALOG] fonte final", {
-    total: stickers.length,
-    primeiroId: stickers[0]?.id,
-    primeiroCode: stickers[0]?.code,
-    uuidValido: isUuid(stickers[0]?.id || "")
-  });
+  return validateRemoteCatalogStickers(mergedStickers).sort(compareStickers);
 }
 
 function deriveStickerType(item) {
@@ -553,7 +555,6 @@ async function applyFinalRemoteOwnership(userId, baseStickers = catalogCache) {
 
   writeMergedLocalOwnership(userId, finalOwnership, validStickerIds);
   catalogCache = mergeOwnership(baseStickers, finalOwnership);
-  logCatalogSource(catalogCache);
 
   console.log("[SYNC FINAL] total aplicado ao catálogo", countCatalogOwned(catalogCache));
   console.log("[SYNC FINAL] progresso recalculado", calculateProgress(catalogCache));
@@ -703,11 +704,6 @@ async function runSyncPendingChanges() {
 }
 
 async function persistChange(userId, stickerId, hasSticker) {
-  auditOwnershipFlow("updateStickerOwnership", {
-    stickerId,
-    syncStickerId: isUuid(stickerId) ? stickerId : ""
-  });
-
   if (!navigator.onLine || !isSupabaseConfigured() || !isUuid(stickerId)) {
     const motivo = !navigator.onLine
       ? "navegador offline"
@@ -729,11 +725,6 @@ async function persistChange(userId, stickerId, hasSticker) {
 }
 
 async function upsertRemoteOwnership(userId, stickerId, hasSticker) {
-  auditOwnershipFlow("markSticker/sync", {
-    stickerId,
-    syncStickerId: stickerId
-  });
-
   if (!isUuid(stickerId)) {
     console.log("[SYNC] sincronização cancelada", `sticker_id precisa ser UUID: ${stickerId}`);
     throw new Error(`sticker_id precisa ser UUID. Valor recebido: ${stickerId}`);
@@ -855,7 +846,7 @@ function removeQueuedChange(userId, stickerId) {
 }
 
 function sanitizeSyncQueue(validStickerIds, userId = activeUserId) {
-  if (activeCatalogSource !== "supabase") {
+  if (activeCatalogSource !== "remote") {
     return getSyncQueue();
   }
 
@@ -1133,73 +1124,89 @@ function normalizeAlbums(albums) {
   }));
 }
 
+function buildUniqueStickerCodeMap(stickers, sourceLabel) {
+  const byCode = new Map();
+  const duplicates = new Set();
+
+  (stickers || []).filter(isOperationalSticker).forEach((sticker) => {
+    const code = normalizeStickerCode(sticker.code);
+    if (!code) return;
+
+    if (duplicates.has(code)) {
+      return;
+    }
+
+    if (byCode.has(code)) {
+      duplicates.add(code);
+      byCode.delete(code);
+      return;
+    }
+
+    byCode.set(code, sticker);
+  });
+
+  duplicates.forEach((code) => {
+    console.error("[CATALOG] code duplicado", { source: sourceLabel, code });
+  });
+
+  return byCode;
+}
+
+function validateRemoteCatalogStickers(stickers) {
+  const duplicatedUuid = findDuplicates(stickers.map((sticker) => String(sticker.id || "")));
+  const duplicatedCode = findDuplicates(stickers.map((sticker) => normalizeStickerCode(sticker.code)).filter(Boolean));
+
+  duplicatedUuid.forEach((id) => {
+    console.error("[CATALOG] UUID duplicado", { id });
+  });
+
+  duplicatedCode.forEach((code) => {
+    console.error("[CATALOG] code duplicado", { source: "remote-merged", code });
+  });
+
+  return stickers.filter((sticker) => {
+    const code = normalizeStickerCode(sticker.code);
+
+    if (!isUuid(sticker.id)) {
+      console.error("[CATALOG] ID de figurinha nao e UUID", {
+        id: sticker.id,
+        code: sticker.code
+      });
+      return false;
+    }
+
+    return Boolean(code)
+      && !duplicatedUuid.has(String(sticker.id || ""))
+      && !duplicatedCode.has(code);
+  });
+}
+
+function findDuplicates(values) {
+  const seen = new Set();
+  const duplicates = new Set();
+
+  values.forEach((value) => {
+    if (!value) return;
+    if (seen.has(value)) {
+      duplicates.add(value);
+      return;
+    }
+    seen.add(value);
+  });
+
+  return duplicates;
+}
+
 function getValidStickerIds(stickers) {
-  return new Set(stickers.filter(isOperationalSticker).map((item) => item.id).filter(isUuid));
+  return new Set(stickers.filter(isOperationalSticker).map((item) => item.id));
 }
 
-function getStickerAliases(sticker) {
-  const aliases = new Set([
-    sticker.id,
-    normalizeAlias(sticker.id),
-    sticker.code,
-    normalizeAlias(sticker.code)
-  ]);
-
-  const number = Number(sticker.number || sticker.player_number || sticker.playerNumber);
-  const codePrefix = String(sticker.code || "").replace(/\d+$/, "");
-  const teamCode = sticker.team_code || sticker.teamCode || codePrefix;
-
-  if (codePrefix && number >= 0) {
-    aliases.add(`${codePrefix}${number}`);
-    aliases.add(normalizeAlias(`${codePrefix}${number}`));
-    aliases.add(`${codePrefix}-${String(number).padStart(2, "0")}`);
-    aliases.add(normalizeAlias(`${codePrefix}-${String(number).padStart(2, "0")}`));
-  }
-
-  if (teamCode && number > 0) {
-    aliases.add(`team-${String(teamCode).toLowerCase()}-${number}`);
-    aliases.add(normalizeAlias(`team-${String(teamCode).toLowerCase()}-${number}`));
-  }
-
-  if (codePrefix === "INTRO" && number === 0) {
-    aliases.add("intro-00");
-    aliases.add(normalizeAlias("intro-00"));
-  }
-
-  return [...aliases].filter(Boolean);
-}
-
-function normalizeAlias(value = "") {
-  return String(value)
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, "");
-}
-
-function normalizeRemoteCode(value = "") {
-  return normalizeAlias(value);
+function normalizeStickerCode(code = "") {
+  return String(code).trim().toUpperCase();
 }
 
 function isUuid(value = "") {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value));
-}
-
-function auditOwnershipFlow(etapa, { stickerId, syncStickerId }) {
-  if (!isLegacyStickerId(stickerId) && !isLegacyStickerId(syncStickerId)) return;
-
-  console.warn("[ALBUM AUDIT]", {
-    etapa,
-    idRecebido: stickerId,
-    idArmazenadoNoDataset: "",
-    idEnviadoParaToggle: stickerId,
-    idEnviadoParaSync: syncStickerId || "",
-    motivo: "ID legado bloqueado no servico de colecao"
-  });
-}
-
-function isLegacyStickerId(value = "") {
-  return Boolean(value && !isUuid(value));
 }
 
 function compareSections(a, b) {

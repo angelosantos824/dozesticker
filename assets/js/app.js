@@ -552,7 +552,7 @@ async function renderDashboard() {
 
   document.querySelector("[data-collection-summary]").innerHTML = [
     ["Album ativo", "Copa do Mundo 2026"],
-    ["Fonte dos dados", getServiceMode() === "supabase" ? "Supabase" : "Armazenamento local"],
+    ["Fonte dos dados", getServiceMode() === "remote" ? "Supabase" : "Catalogo temporario"],
     ["Fluxo atual", "Tenho / Faltam"],
     ["Modo recomendado", "Feira"]
   ].map(([label, value]) => `
@@ -739,8 +739,6 @@ async function renderCollection() {
     if (!button) return;
     const stickerId = button.dataset.stickerId;
     const nextValue = button.dataset.hasSticker !== "true";
-    auditStickerFlow("eventListener clique colecao", { button, toggleStickerId: stickerId });
-
     if (nextValue) {
       await markSticker(stickerId);
       showToast("Figurinha adicionada", {
@@ -785,7 +783,6 @@ async function renderTradeMode() {
     const button = event.target.closest("[data-sticker-id]");
     if (!button) return;
     const stickerId = button.dataset.stickerId;
-    auditStickerFlow("eventListener clique troca", { button, toggleStickerId: stickerId });
     await markSticker(stickerId);
     await paint();
     showToast("Recebida", {
@@ -844,7 +841,6 @@ async function renderFairMode() {
   const receiveSticker = async (stickerId) => {
     const card = list.querySelector(`[data-sticker-id="${stickerId}"]`);
     card?.classList.add("is-leaving");
-    auditStickerFlow("botao Tenho/Receber feira", { button: card, toggleStickerId: stickerId });
     await markSticker(stickerId);
     addRecentSearch(search.value);
     window.setTimeout(async () => {
@@ -864,7 +860,6 @@ async function renderFairMode() {
     if (handleGroupJump(event)) return;
     const button = event.target.closest("[data-sticker-id]");
     if (!button) return;
-    auditStickerFlow("eventListener clique feira", { button, toggleStickerId: button.dataset.stickerId });
     await receiveSticker(button.dataset.stickerId);
   });
 
@@ -943,6 +938,7 @@ async function renderAlbumPage() {
   let activeSectionId = "";
   let activeStatus = "todas";
   let activeType = "todos";
+  let fallbackNoticeShown = false;
 
   shell.querySelector("[data-album-title]").textContent = album.name;
   shell.querySelector("[data-album-search-wrap]").innerHTML = SearchBar();
@@ -986,6 +982,13 @@ async function renderAlbumPage() {
   };
 
   const paint = async () => {
+    if (getServiceMode() === "fallback" && !fallbackNoticeShown) {
+      fallbackNoticeShown = true;
+      showToast("Catalogo temporario/offline: marcacao de posse indisponivel ate carregar o catalogo oficial.", {
+        duration: 6000
+      });
+    }
+
     nav.innerHTML = AlbumNavigation(sections, activeSectionId);
     renderFilters();
     const progress = activeSectionId ? await getSectionProgress(activeSectionId) : await getProgress();
@@ -1031,7 +1034,6 @@ async function renderAlbumPage() {
     if (!button) return;
     const stickerId = button.dataset.stickerId;
     const nextValue = button.dataset.hasSticker !== "true";
-    auditStickerFlow("eventListener clique album", { button, toggleStickerId: stickerId });
     button.disabled = true;
     try {
       await toggleSticker(stickerId, nextValue);
@@ -1061,15 +1063,9 @@ async function renderAlbumPage() {
 }
 
 function stickerCard(sticker) {
-  const stickerId = getStickerUuid(sticker);
-  const buttonAttributes = stickerId
-    ? `data-sticker-id="${stickerId}" data-has-sticker="${sticker.hasSticker}"`
-    : `disabled aria-disabled="true" title="Catalogo remoto indisponivel"`;
-  auditStickerFlow("createStickerCard colecao", {
-    sticker,
-    datasetStickerId: stickerId,
-    toggleStickerId: stickerId
-  });
+  const ownershipAttributes = sticker.catalogSource === "remote"
+    ? `data-sticker-id="${sticker.id}" data-has-sticker="${sticker.hasSticker}"`
+    : `disabled aria-disabled="true" title="Catalogo temporario: posse indisponivel"`;
 
   return `
     <article class="surface sticker-card ${sticker.hasSticker ? "is-owned" : "is-missing"}">
@@ -1080,7 +1076,7 @@ function stickerCard(sticker) {
         <span>Pagina ${sticker.page || "-"} &middot; Posicao ${sticker.position || "-"}</span>
         <span class="badge ${sticker.hasSticker ? "badge-owned" : "badge-missing"}">${sticker.hasSticker ? "Tenho" : "Ainda nao tenho"}</span>
       </div>
-      <button class="button ${sticker.hasSticker ? "button-secondary" : "button-primary"}" type="button" ${buttonAttributes}>
+      <button class="button ${sticker.hasSticker ? "button-secondary" : "button-primary"}" type="button" ${ownershipAttributes}>
         ${sticker.hasSticker ? "Tenho" : "Adicionar"}
       </button>
     </article>
@@ -1088,15 +1084,12 @@ function stickerCard(sticker) {
 }
 
 function tradeCard(sticker) {
-  const stickerId = getStickerUuid(sticker);
-  auditStickerFlow("createStickerCard troca", {
-    sticker,
-    datasetStickerId: stickerId,
-    toggleStickerId: stickerId
-  });
+  const ownershipAttributes = sticker.catalogSource === "remote"
+    ? `data-sticker-id="${sticker.id}"`
+    : `disabled aria-disabled="true" title="Catalogo temporario: posse indisponivel"`;
 
   return `
-    <button class="trade-card surface" type="button" ${stickerId ? `data-sticker-id="${stickerId}"` : `disabled aria-disabled="true" title="Catalogo remoto indisponivel"`}>
+    <button class="trade-card surface" type="button" ${ownershipAttributes}>
       <span class="trade-code">${sticker.code}</span>
       <span>
         <strong>${sticker.title}</strong>
@@ -1108,15 +1101,12 @@ function tradeCard(sticker) {
 }
 
 function fairCard(sticker) {
-  const stickerId = getStickerUuid(sticker);
-  auditStickerFlow("createStickerCard feira", {
-    sticker,
-    datasetStickerId: stickerId,
-    toggleStickerId: stickerId
-  });
+  const ownershipAttributes = sticker.catalogSource === "remote"
+    ? `data-sticker-id="${sticker.id}"`
+    : `disabled aria-disabled="true" title="Catalogo temporario: posse indisponivel"`;
 
   return `
-    <button class="fair-item" type="button" ${stickerId ? `data-sticker-id="${stickerId}"` : `disabled aria-disabled="true" title="Catalogo remoto indisponivel"`}>
+    <button class="fair-item" type="button" ${ownershipAttributes}>
       <span class="fair-code">${sticker.code}</span>
       <span class="fair-info">
         <strong>${sticker.title}</strong>
@@ -1125,38 +1115,6 @@ function fairCard(sticker) {
       <span class="fair-action">Receber</span>
     </button>
   `;
-}
-
-function getStickerUuid(sticker) {
-  return isUuid(sticker?.id) ? sticker.id : "";
-}
-
-function isUuid(value = "") {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value));
-}
-
-function auditStickerFlow(etapa, { sticker, button, datasetStickerId, toggleStickerId } = {}) {
-  const idRecebido = sticker?.id || button?.dataset?.stickerId || "";
-  const idArmazenadoNoDataset = datasetStickerId ?? button?.dataset?.stickerId ?? "";
-  const idEnviadoParaToggle = toggleStickerId || "";
-
-  if (!isLegacyStickerId(idRecebido) && !isLegacyStickerId(idArmazenadoNoDataset) && !isLegacyStickerId(idEnviadoParaToggle)) {
-    return;
-  }
-
-  console.warn("[ALBUM AUDIT]", {
-    etapa,
-    idRecebido,
-    codigoExibicao: sticker?.code || "",
-    idArmazenadoNoDataset,
-    idEnviadoParaToggle,
-    idEnviadoParaSync: "",
-    motivo: "ID legado detectado no frontend"
-  });
-}
-
-function isLegacyStickerId(value = "") {
-  return Boolean(value && !isUuid(value));
 }
 
 function compactStats(stats) {
